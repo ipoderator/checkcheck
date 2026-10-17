@@ -1,0 +1,8 @@
+# ДОМЕН: замените https://ДОМЕН на адрес сайта после покупки домена (см. README).
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /app/
+Disallow: /storage/
+
+Sitemap: https://ДОМЕН/sitemap.xml
