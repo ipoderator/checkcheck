@@ -1,0 +1,54 @@
+# Настройки Apache для обычного хостинга (Timeweb, Beget).
+
+AddDefaultCharset UTF-8
+DirectoryIndex index.html
+Options -Indexes
+
+ErrorDocument 404 /404.html
+
+# Служебные папки отвечают 404, даже если хостинг не разрешает .htaccess внутри них.
+<IfModule mod_alias.c>
+    RedirectMatch 404 ^/(app|storage)(/.*)?$
+</IfModule>
+
+# Скрытые и служебные файлы: .env, .git, резервные копии, логи.
+<FilesMatch "(^\.|\.(env|ini|log|jsonl|md|sh|sql|bak|dist)$|^(composer|package)(-lock)?\.json$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType font/woff2 .woff2
+    AddType image/webp .webp
+    AddType image/svg+xml .svg
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml application/xml
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 hour"
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType application/json "access plus 0 seconds"
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType text/javascript "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+</IfModule>

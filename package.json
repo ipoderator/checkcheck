@@ -1,0 +1,21 @@
+{
+  "name": "vsecheki-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Сайт «ВсеЧеки»: статические страницы и PHP-обработчик заявок",
+  "scripts": {
+    "dev": "php -S 127.0.0.1:8080 -t public",
+    "test": "node tests/helpers/php-lint.mjs && node tools/check-secrets.mjs && node --test \"tests/api/*.test.mjs\" && playwright test --pass-with-no-tests",
+    "test:api": "node --test \"tests/api/*.test.mjs\"",
+    "test:e2e": "playwright test",
+    "images": "node tools/render/render.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "playwright": "^1.64.1",
+    "three": "^0.186.1"
+  }
+}

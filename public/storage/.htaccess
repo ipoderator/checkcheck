@@ -1,0 +1,8 @@
+# Служебные файлы (лимит частоты, резервные копии заявок): из браузера недоступны.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

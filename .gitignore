@@ -5,3 +5,12 @@ node_modules/
 __pycache__/
 .DS_Store
 .autopilot/serve.*
+
+# Рабочий конфиг заявок — создаёт владелец на хостинге
+public/app/config.php
+# Служебные файлы обработчика заявок (кроме .htaccess)
+public/storage/*
+!public/storage/.htaccess
+# Отчёты Playwright
+test-results/
+playwright-report/
