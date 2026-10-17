@@ -3,6 +3,50 @@
 
 Русскоязычный адаптивный сайт-лендинг производителя кассовой ленты (производство в Лейпциге) для сбора заявок на расчёт цены и сотрудничество.
 
+## Команды
+
+| Что | Команда |
+|---|---|
+| Установка | `npm ci` |
+| Dev-сервер (http://127.0.0.1:8080, 403 на /app/ и /storage/) | `npm run dev` |
+| Всё: php-lint, check-secrets, node:test, Playwright | `npm test` |
+| Только API | `npm run test:api` |
+| Один файл API | `node --test tests/api/lead.test.mjs` |
+| Только e2e | `npm run test:e2e` |
+| Один e2e-файл | `npx playwright test tests/e2e/form.spec.mjs` |
+| Проверка PHP 7.4 | `node tests/helpers/php-lint.mjs` |
+| Проверка секретов | `node tools/check-secrets.mjs` |
+| Перерендер картинок (~70 с; python3, Pillow, fontTools) | `npm run images` |
+
+## Где что
+
+- Архитектура, поток формы -> `api/lead.php` -> каналы, соглашения: `docs/architecture.md`.
+- Решения и их причины: `docs/adr/`; словарь предметной области: `CONTEXT.md`.
+- Бэкенд заявок: `public/api/lead.php` (вход), `public/app/LeadService.php` (логика), `public/app/LeadRequest.php` (поля и валидация).
+- Фронт: `public/index.html`, `public/assets/js/lead-form.js` (форма), `public/assets/js/main.js` (UI), `public/assets/css/main.css`.
+- Хелперы тестов (PHP-сервер, поддельные SMTP и Telegram): `tests/helpers/`.
+- Рендер изображений в `public/assets/img/`: `tools/render/`.
+
+## Подводные камни
+
+- Класс `Config` лежит в `public/app/ConfigLoader.php`: на macOS `Config.php` совпал бы с `config.php`.
+- Только синтаксис PHP 7.4 (на хостинге; локально новее): `tests/helpers/php-lint.mjs` ловит `match`, `?->`, `str_contains` и т. п.
+- Лимит 5 заявок с IP за 10 минут действует и в e2e: успешные отправки подменять через `page.route`, как в `tests/e2e/form.spec.mjs`.
+- Два SMTP-теста в `tests/api/channels.test.mjs` слушают `::1`: без IPv6 на loopback упадут.
+- `php -S` отдаёт главную на несуществующие пути; 404 только на Apache через `public/.htaccess`. e2e идёт на `php -S` без `tools/dev-router.php`, поэтому 403 на `/app/` там не проверить.
+- `public/storage/` и `public/app/config.php` в `.gitignore`: файлы rate limit и конфиг не коммитить.
+- Факты на сайте только те, что сообщил владелец: без цен, характеристик, сертификатов, клиентов, отзывов.
+- Изображения не фотографии, а 3D-визуализации (`CONTEXT.md`): не подавать как фото производства.
+
+## Окружение
+
+Значения задаются на сервере в окружении или в `public/app/config.php` (образец `public/app/config.example.php`); в репозитории пусты.
+
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — канал Telegram; нужны оба.
+- `LEAD_EMAIL_TO`, `LEAD_EMAIL_FROM` — получатель и отправитель письма.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE` (`ssl` | `tls` | пусто) — SMTP; без `SMTP_HOST` письма идут через `mail()`.
+- Только для тестов: `TELEGRAM_API_BASE`, `MAIL_TRANSPORT` (`file` пишет письма в `STORAGE_DIR/outbox/`), `STORAGE_DIR`, `E2E_PORT` (по умолчанию 8091).
+
 ## Как здесь работает Autopilot
 
 Сборка ведётся навыком `/autopilot`. Требования, спецификация и таски — в `.autopilot/`.

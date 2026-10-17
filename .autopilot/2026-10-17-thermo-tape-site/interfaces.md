@@ -30,7 +30,7 @@ public/                      ← ровно то, что загружается 
     .htaccess  (Require all denied)
     config.example.php
     config.php               ← в .gitignore, создаёт владелец
-    bootstrap.php  Config.php  LeadRequest.php  RateLimiter.php
+    bootstrap.php  ConfigLoader.php (класс `Config`; имя не `Config.php` — на macOS совпадает с `config.php`)  LeadRequest.php  RateLimiter.php
     TelegramChannel.php  MailChannel.php  SmtpClient.php  LeadService.php
   storage/                   ← закрыт .htaccess; создаётся при необходимости
     .htaccess
@@ -59,7 +59,7 @@ README.md
 | `message` | строка | нет | ≤ 2000 |
 | `consent` | `1` | да | |
 | `website` | строка | — | ловушка: должна быть пустой |
-| `form_started_at` | число, мс epoch | да | отправка раньше чем через 3000 мс → считается ботом |
+| `form_elapsed_ms` | число ≥ 0 (дробь допустима; клиент шлёт `Math.round`) | нет | мс с момента готовности формы, **измерено в браузере** (`performance.now()`); `< 3000`, отрицательное, нечисловое → считается ботом; поле отсутствует **или пустое** (форма без JS) → проверка времени пропускается; в разметке скрытого поля с пустым значением нет — JS добавляет его при отправке. *D01, таск 01: сравнение часов браузера и сервера теряло настоящие заявки при спешащих часах.* |
 | `page` | строка | нет | ≤ 300, путь страницы-источника |
 
 Ответ — всегда JSON `Content-Type: application/json; charset=utf-8`:
@@ -91,7 +91,7 @@ README.md
 interface LeadChannel { public function name(): string; public function isConfigured(): bool; public function send(array $lead): void; /* throws RuntimeException */ }
 ```
 
-`$lead` — нормализованная заявка: те же ключи, что в запросе (без `website`, `form_started_at`, `consent`), плюс `type_label` («Рассчитать цену» | «Сотрудничество»), `phone` в `+7…`, `received_at` (ISO, Europe/Moscow), `ip`.
+`$lead` — нормализованная заявка: те же ключи, что в запросе (без `website`, `form_elapsed_ms`, `consent`), плюс `type_label` («Рассчитать цену» | «Сотрудничество»), `phone` в `+7…`, `received_at` (ISO, Europe/Moscow), `ip`.
 `LeadService::handle(array $post, string $ip): array{status:int, body:array}` — вся логика контракта; `api/lead.php` только вызывает его и печатает ответ.
 
 Логи — `error_log()` без персональных данных (только канал и текст ошибки).
@@ -104,7 +104,7 @@ interface LeadChannel { public function name(): string; public function isConfig
 - Статус: `<div data-lead-status role="status" aria-live="polite">`; состояния на форме: `data-state="idle|sending|success|error"`.
 - Кнопка: `<button type="submit" data-lead-submit>`.
 - Внешние ссылки на форму: `href="#price"`, `href="#partner"`; кнопка формата: `data-lead-format="57x40|80x80|other"` → открывает вкладку price и выставляет формат.
-- Черновик: ключ `localStorage` `vsecheki:lead-draft:v1` — JSON полей (без `website`, `form_started_at`); доступ в try/catch.
+- Черновик: ключ `localStorage` `vsecheki:lead-draft:v1` — JSON полей (без `website`, `form_elapsed_ms`); доступ в try/catch.
 - Без JS: форма отправляется обычным POST; `lead.php` при `Accept`, не содержащем `application/json`, отвечает той же JSON-структурой. Это допустимо: основной путь — JS.
 
 ### Модуль UI — `main.js`
@@ -147,3 +147,13 @@ interface LeadChannel { public function name(): string; public function isConfig
 - **Одна команда проверки — `npm test`** (создаёт таск 01): `php -l` всех файлов в `public/` + проверка «нет секретов» + `node --test tests/api` + `npx playwright test` (e2e добавит таск 03; пока e2e нет — шаг не падает).
 - Один файл: `node --test tests/api/lead.test.mjs`; `npx playwright test tests/e2e/form.spec.mjs`.
 - Не трогать: `.autopilot/` (кроме чтения), `AGENTS.md`, `CLAUDE.md`.
+
+## Выставлено готовыми тасками
+
+### T01 — бэкенд заявок
+- `LeadService::handle(array $post, string $ip, string $method='POST', string $contentType=…): array{status,body}`; `LeadService::fromConfig(array $config)`; `Config::load(): array` (файл `app/ConfigLoader.php`); `LeadChannel::name()` = `telegram` | `email`.
+- Дополнительный ответ 500 `{"ok":false,"code":"server_error"}` — только непойманное исключение; форма показывает его как «не удалось доставить».
+- Хранилище: `STORAGE_DIR/ratelimit/*.json`, `STORAGE_DIR/outbox/*.eml` (тесты), `STORAGE_DIR/failed-leads.jsonl`.
+- npm-скрипты: `dev`, `test`, `test:api`, `test:e2e`, `images`. e2e-сервер Playwright: `127.0.0.1:8091` (`E2E_PORT`), `MAIL_TRANSPORT=file`, конфиг пустой → `not_configured`. **Лимит 5 заявок с IP действует и в e2e** — успешные отправки в e2e подменять через `page.route` или держать ≤ 4 реальных.
+- `page` обрезается до 300 символов; у `type=partner` поля format/format_custom/quantity отбрасываются.
+- SMTP: при `SMTP_USER` и `SMTP_SECURE` ∉ {ssl,tls} клиент включает STARTTLS, если сервер его объявил, иначе ошибка канала (кроме localhost).

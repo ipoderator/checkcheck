@@ -2,7 +2,7 @@ window.STATE =
 {
   "version": 2,
   "slug": "thermo-tape-site",
-  "dir": "2026-10-17-thermo-tape-site--wip",
+  "dir": "2026-10-17-thermo-tape-site",
   "title": "Сайт производителя кассовой термоленты",
   "mode": "semi",
   "depth": "deep",
@@ -11,10 +11,10 @@ window.STATE =
   "memoryFile": "AGENTS.md",
   "memoryOwner": "autopilot",
   "skillDir": "/Users/glebchurkin/.claude/skills/autopilot",
-  "baseCommit": null,
+  "baseCommit": "95145c1",
   "startedAt": "2026-10-17T16:25:30+03:00",
-  "updatedAt": "2026-10-17T18:09:31+03:00",
-  "finishedAt": null,
+  "updatedAt": "2026-10-17T19:26:36+03:00",
+  "finishedAt": "2026-10-17T19:26:36+03:00",
   "stages": [
     {
       "id": "preflight",
@@ -42,26 +42,33 @@ window.STATE =
     },
     {
       "id": "plan",
-      "status": "active",
-      "startedAt": "2026-10-17T18:08:23+03:00"
+      "status": "done",
+      "startedAt": "2026-10-17T18:08:23+03:00",
+      "finishedAt": "2026-10-17T18:09:50+03:00"
     },
     {
       "id": "build",
-      "status": "pending"
+      "status": "done",
+      "startedAt": "2026-10-17T18:09:50+03:00",
+      "finishedAt": "2026-10-17T19:05:55+03:00"
     },
     {
       "id": "review",
-      "status": "pending"
+      "status": "done",
+      "startedAt": "2026-10-17T19:05:55+03:00",
+      "finishedAt": "2026-10-17T19:19:19+03:00"
     },
     {
       "id": "final",
-      "status": "pending"
+      "status": "done",
+      "startedAt": "2026-10-17T19:19:19+03:00",
+      "finishedAt": "2026-10-17T19:26:36+03:00"
     }
   ],
   "requirements": {
     "total": 52,
-    "done": 2,
-    "inTicket": 50,
+    "done": 52,
+    "inTicket": 0,
     "inSpec": 0,
     "placeholder": 0,
     "deferred": 0,
@@ -107,9 +114,20 @@ window.STATE =
       ],
       "review": "да — секреты и сообщения третьим лицам",
       "model": "сильная",
-      "status": "pending",
+      "status": "done",
+      "startedAt": "2026-10-17T18:09:53+03:00",
+      "finishedAt": "2026-10-17T18:34:09+03:00",
       "retries": 0,
-      "repairs": 0
+      "repairs": 2,
+      "repairFindings": [
+        "D01: проверка времени — form_elapsed_ms из браузера вместо сравнения часов",
+        "form_elapsed_ms: '' = нет поля, дробное ≥3000 доставляется; SMTP без TLS не шлёт AUTH"
+      ],
+      "tests": {
+        "passed": 83,
+        "failed": 0
+      },
+      "commit": "f4ce0cd"
     },
     {
       "id": "02",
@@ -133,9 +151,16 @@ window.STATE =
       ],
       "review": "нет",
       "model": "сильная",
-      "status": "pending",
+      "status": "done",
+      "startedAt": "2026-10-17T18:34:09+03:00",
+      "finishedAt": "2026-10-17T19:03:14+03:00",
       "retries": 0,
-      "repairs": 0
+      "repairs": 0,
+      "tests": {
+        "passed": 97,
+        "failed": 0
+      },
+      "commit": "d86e1bc"
     },
     {
       "id": "03",
@@ -211,26 +236,99 @@ window.STATE =
       ],
       "review": "нет",
       "model": "сильная",
-      "status": "pending",
+      "status": "done",
+      "startedAt": "2026-10-17T18:34:09+03:00",
+      "finishedAt": "2026-10-17T19:05:55+03:00",
       "retries": 0,
-      "repairs": 0
+      "repairs": 0,
+      "tests": {
+        "passed": 130,
+        "failed": 0
+      },
+      "commit": "5dfcf0c"
+    },
+    {
+      "id": "F1",
+      "title": "Правки по ревью ветки",
+      "requirements": [
+        "R19.6",
+        "R35i",
+        "R35i.1",
+        "R34i",
+        "G06",
+        "G09.1",
+        "R17",
+        "R03.2",
+        "R01"
+      ],
+      "blockedBy": [],
+      "wave": 3,
+      "zone": [
+        "public/assets/js/",
+        "public/assets/css/main.css",
+        "public/index.html",
+        "public/privacy.html",
+        "public/consent.html",
+        "public/app/TelegramChannel.php",
+        "tests/api/",
+        "tests/e2e/",
+        "tools/dev-router.php",
+        "package.json",
+        "README.md"
+      ],
+      "review": "да — ремонт ветки",
+      "model": "сильная",
+      "status": "done",
+      "retries": 0,
+      "repairs": 0,
+      "startedAt": "2026-10-17T19:10:54+03:00",
+      "finishedAt": "2026-10-17T19:19:19+03:00",
+      "tests": {
+        "passed": 151,
+        "failed": 0
+      },
+      "commit": "e8411c8"
     }
   ],
-  "tests": null,
+  "tests": {
+    "passed": 151,
+    "failed": 0
+  },
   "debt": {
     "placeholders": [],
     "assumptions": [],
     "emptyEnv": []
   },
-  "additions": [],
+  "additions": [
+    "FAQ из известных фактов — ради R14",
+    "страница 404 в стиле ленты — ради R14",
+    "резервный файл недоставленных заявок — ради R19"
+  ],
   "coverage": {
     "found": 3,
     "fixed": 3,
     "deferred": 0,
     "items": []
   },
-  "concerns": [],
-  "blind": null,
+  "concerns": [
+    "tests/api/channels.test.mjs:145 — ветки STARTTLS/SSL в SmtpClient не покрыты тестами",
+    "tools/check-secrets.mjs:51-59 — не ловит define(), $c['KEY']='…', $_ENV[...]='…', числа в JSON",
+    "public/app/TelegramChannel.php:59 — лимит 4096 считается в символах, а Telegram — в UTF-16; 2000 эмодзи → 400 от Telegram",
+    "package.json:7 — npm run dev отдаёт public/storage через php -S; STORAGE_DIR вынести из public/",
+    "tests/api/channels.test.mjs — тесты SMTP слушают ::1, в окружении без IPv6 упадут",
+    "SmtpClient — реальный TLS (ssl/STARTTLS) тестами не проверен; PHP 7.4 проверен только линтером",
+    "public/assets/img/*.png — PNG-запасные тяжёлые (hero ~1 МБ, stack 1,17 МБ); основной формат WebP",
+    "tools/render — логотип пересобирается только при python3 с Pillow и fontTools",
+    "public/assets/js/lead-form.js — черновик в localStorage восстанавливает и галочку согласия; согласие должно ставиться заново",
+    "privacy.html/consent.html — адрес оператора только «г. Липецк»; для согласия по ст. 9 152-ФЗ нужен полный адрес"
+  ],
+  "blind": {
+    "checked": 20,
+    "matched": 19,
+    "mismatches": [
+      "R27 «другие факты, которых я не сообщил» — частично: на сайте есть выводы из брифа — подпись «ширина × намотка», назначение ленты (кассы, POS-принтеры), список «магазины, сети, дилеры, сервисные компании», шаги «свяжемся с вами», «без посредников»"
+    ]
+  },
   "beats": [
     "2026-10-17T16:25:30+03:00",
     "2026-10-17T16:25:42+03:00",
@@ -239,9 +337,24 @@ window.STATE =
     "2026-10-17T18:03:52+03:00",
     "2026-10-17T18:08:23+03:00",
     "2026-10-17T18:09:30+03:00",
-    "2026-10-17T18:09:31+03:00"
+    "2026-10-17T18:09:31+03:00",
+    "2026-10-17T18:09:43+03:00",
+    "2026-10-17T18:09:50+03:00",
+    "2026-10-17T18:09:53+03:00",
+    "2026-10-17T18:26:12+03:00",
+    "2026-10-17T18:27:20+03:00",
+    "2026-10-17T18:30:14+03:00",
+    "2026-10-17T18:34:09+03:00",
+    "2026-10-17T19:03:14+03:00",
+    "2026-10-17T19:05:55+03:00",
+    "2026-10-17T19:10:54+03:00",
+    "2026-10-17T19:17:53+03:00",
+    "2026-10-17T19:19:19+03:00",
+    "2026-10-17T19:25:42+03:00",
+    "2026-10-17T19:25:43+03:00",
+    "2026-10-17T19:26:36+03:00"
   ],
-  "rev": 13,
+  "rev": 40,
   "waiting": null,
   "waits": [
     {
@@ -323,143 +436,341 @@ window.STATE =
       "g": "G3",
       "ok": true,
       "problems": 0
+    },
+    {
+      "t": "2026-10-17T18:09:50+03:00",
+      "k": "stage",
+      "id": "build",
+      "act": "start"
+    },
+    {
+      "t": "2026-10-17T18:09:53+03:00",
+      "k": "ticket",
+      "ids": [
+        "01"
+      ],
+      "act": "start"
+    },
+    {
+      "t": "2026-10-17T18:26:12+03:00",
+      "k": "ticket",
+      "ids": [
+        "01"
+      ],
+      "act": "repair",
+      "note": "D01: проверка времени — form_elapsed_ms из браузера вместо сравнения часов"
+    },
+    {
+      "t": "2026-10-17T18:27:20+03:00",
+      "k": "ticket",
+      "ids": [
+        "01"
+      ],
+      "act": "review"
+    },
+    {
+      "t": "2026-10-17T18:30:14+03:00",
+      "k": "ticket",
+      "ids": [
+        "01"
+      ],
+      "act": "repair",
+      "note": "form_elapsed_ms: '' = нет поля, дробное ≥3000 доставляется; SMTP без TLS не шлёт AUTH"
+    },
+    {
+      "t": "2026-10-17T18:30:14+03:00",
+      "k": "add",
+      "key": "concerns",
+      "n": 4
+    },
+    {
+      "t": "2026-10-17T18:34:09+03:00",
+      "k": "ticket",
+      "ids": [
+        "01"
+      ],
+      "act": "done",
+      "tests": {
+        "passed": 83,
+        "failed": 0
+      }
+    },
+    {
+      "t": "2026-10-17T18:34:09+03:00",
+      "k": "add",
+      "key": "concerns",
+      "n": 2
+    },
+    {
+      "t": "2026-10-17T18:34:09+03:00",
+      "k": "ticket",
+      "ids": [
+        "02",
+        "03"
+      ],
+      "act": "start"
+    },
+    {
+      "t": "2026-10-17T19:03:14+03:00",
+      "k": "ticket",
+      "ids": [
+        "02"
+      ],
+      "act": "done",
+      "tests": {
+        "passed": 97,
+        "failed": 0
+      }
+    },
+    {
+      "t": "2026-10-17T19:03:14+03:00",
+      "k": "add",
+      "key": "concerns",
+      "n": 2
+    },
+    {
+      "t": "2026-10-17T19:05:55+03:00",
+      "k": "ticket",
+      "ids": [
+        "03"
+      ],
+      "act": "done",
+      "tests": {
+        "passed": 130,
+        "failed": 0
+      }
+    },
+    {
+      "t": "2026-10-17T19:05:55+03:00",
+      "k": "add",
+      "key": "additions",
+      "n": 3
+    },
+    {
+      "t": "2026-10-17T19:05:55+03:00",
+      "k": "add",
+      "key": "concerns",
+      "n": 2
+    },
+    {
+      "t": "2026-10-17T19:05:55+03:00",
+      "k": "stage",
+      "id": "review",
+      "act": "start"
+    },
+    {
+      "t": "2026-10-17T19:10:54+03:00",
+      "k": "tickets",
+      "n": 4
+    },
+    {
+      "t": "2026-10-17T19:10:54+03:00",
+      "k": "gate",
+      "g": "G3",
+      "ok": true,
+      "problems": 0
+    },
+    {
+      "t": "2026-10-17T19:10:54+03:00",
+      "k": "add",
+      "key": "report",
+      "n": 5
+    },
+    {
+      "t": "2026-10-17T19:10:54+03:00",
+      "k": "ticket",
+      "ids": [
+        "F1"
+      ],
+      "act": "start"
+    },
+    {
+      "t": "2026-10-17T19:17:53+03:00",
+      "k": "ticket",
+      "ids": [
+        "F1"
+      ],
+      "act": "review"
+    },
+    {
+      "t": "2026-10-17T19:19:19+03:00",
+      "k": "ticket",
+      "ids": [
+        "F1"
+      ],
+      "act": "done",
+      "tests": {
+        "passed": 151,
+        "failed": 0
+      }
+    },
+    {
+      "t": "2026-10-17T19:19:19+03:00",
+      "k": "add",
+      "key": "report",
+      "n": 1
+    },
+    {
+      "t": "2026-10-17T19:19:19+03:00",
+      "k": "stage",
+      "id": "final",
+      "act": "start"
+    },
+    {
+      "t": "2026-10-17T19:25:42+03:00",
+      "k": "gate",
+      "g": "G4",
+      "ok": false,
+      "checked": 20,
+      "matched": 19
+    },
+    {
+      "t": "2026-10-17T19:25:43+03:00",
+      "k": "tests",
+      "passed": 151,
+      "failed": 0
+    },
+    {
+      "t": "2026-10-17T19:26:36+03:00",
+      "k": "finish",
+      "result": "Сайт «ВсеЧеки»: лендинг с лентой-чеком, 3D-рулоны, форма заявок в Telegram и на почту, юр. страницы; проверен локально, 151 тест зелёный, не опубликован"
     }
   ],
   "reqList": [
     {
       "id": "R01",
       "text": "«Создай под ключ … сайт»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R02",
       "text": "«современный»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R03",
       "text": "«адаптивный»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R04",
       "text": "«русскоязычный»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R05",
       "text": "«для производителя кассовой термоленты»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R06",
       "text": "«Мы продаём только кассовую ленту»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R07",
       "text": "«Используем качественные немецкие материалы»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R08",
       "text": "«собственное производство находится в Лейпциге»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R09",
       "text": "«Работаем напрямую от производителя»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R10",
       "text": "«предлагаем выгодные цены»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R11",
       "text": "«оптовые поставки»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R12",
       "text": "«долгосрочное сотрудничество»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R13",
       "text": "«отправку в любой регион страны»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R14",
       "text": "«сочетать корпоративный сайт и эффектный рекламный лендинг»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R15",
       "text": "«выразительная типографика»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R16",
       "text": "«качественные изображения продукта»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R17",
       "text": "«аккуратные анимации»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R18",
       "text": "«визуальный мотив непрерывной кассовой ленты»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R19",
       "text": "«Главная цель — получение заявок на расчёт цены»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R20",
       "text": "«и сотрудничество» (заявки на сотрудничество)",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R21",
       "text": "«Не придумывай цены»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R22",
       "text": "«Не придумывай … характеристики»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R23",
       "text": "«Не придумывай … сертификаты»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R24",
       "text": "«Не придумывай … клиентов»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R25",
       "text": "«Не придумывай … отзывы»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R26",
       "text": "«Не придумывай … контакты»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R27",
       "text": "«и другие факты, которых я не сообщил»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R28",
@@ -474,117 +785,117 @@ window.STATE =
     {
       "id": "R30",
       "text": "«самостоятельно подготовь структуру и тексты»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R31",
       "text": "«реализуй сайт»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R32",
       "text": "«проверь его»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R33",
       "text": "«доведи проект до готового состояния»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R34i",
       "text": "(подразумевается) заявки с формы должны куда-то доходить",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R35i",
       "text": "(подразумевается) форма собирает персональные данные — нужно согласие и политика (152-ФЗ)",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R36i",
       "text": "(подразумевается) у компании есть название / бренд, его надо показать",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R37i",
       "text": "(подразумевается) «страны» — какая страна доставки",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "R38i",
       "text": "(подразумевается) сайт где-то размещается и находится поиском (SEO, мета)",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G01",
       "text": "«Размеры 57 на 40 и 80 на 80»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G02",
       "text": "«добавь что есть любые размеры для заказа, можешь указать из общедоступных размеров»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G03",
       "text": "«Фото нет - сделай их сам»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G04",
       "text": "«Сначала разработай и проверь сайт локально, без публикации»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G05",
       "text": "«Подготовь его для размещения на обычном хостинге с поддержкой PHP, например Timeweb или Beget»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G06",
       "text": "«Заявки должны отправляться в Telegram»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G07",
       "text": "«и дублироваться на e-mail»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G08",
       "text": "«Токен Telegram-бота, ID чата и адрес почты оставь пустыми в отдельном конфигурационном файле или переменных окружения»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G09",
       "text": "«Никаких секретных данных в коде быть не должно»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G10",
       "text": "«Если настройки не заполнены, форма должна показывать понятное сообщение»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G11",
       "text": "«и сохранять введённые пользователем данные на странице»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G12",
       "text": "«Публиковать сайт без моего отдельного разрешения не нужно»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G13",
       "text": "«ВсеЧеки название. телефон - 89202431957, почта - ipoderator@yandex.ru. Адрес - город Липецк»",
-      "status": "in-ticket"
+      "status": "done"
     },
     {
       "id": "G14",
       "text": "«Юр лицо - ИП Чуркин Глеб Олегович, инн - 270399373377»",
-      "status": "in-ticket"
+      "status": "done"
     }
   ],
   "gates": {
@@ -603,9 +914,23 @@ window.STATE =
     },
     "G3": {
       "ok": true,
-      "at": "2026-10-17T18:09:31+03:00",
+      "at": "2026-10-17T19:10:54+03:00",
       "problems": 0
+    },
+    "G4": {
+      "ok": false,
+      "at": "2026-10-17T19:25:42+03:00",
+      "checked": 20,
+      "matched": 19
     }
   },
-  "result": null
+  "result": "Сайт «ВсеЧеки»: лендинг с лентой-чеком, 3D-рулоны, форма заявок в Telegram и на почту, юр. страницы; проверен локально, 151 тест зелёный, не опубликован",
+  "report": [
+    "Отправка почты через SMTP (ssl/STARTTLS) и работа на PHP 7.4 не проверены вживую — первую заявку на хостинге стоит отправить вручную и убедиться, что письмо дошло (smtp.yandex.ru:465)",
+    "Полный адрес оператора ПДн в политике и согласии — только «г. Липецк»; для согласия по 152-ФЗ нужен полный адрес — впиши его сам",
+    "Проверка «нет секретов» не ловит экзотические формы записи (define(), $_ENV[…]=…, числа в JSON) — config.php в .gitignore, риск низкий",
+    "PNG-запасные картинки тяжёлые (~1 МБ); их грузят только старые браузеры без WebP",
+    "Два SMTP-теста требуют IPv6 (::1) — в окружении без IPv6 упадут",
+    "Код-ревью: 12 замечаний — 6 поправлено, 6 в отчёте"
+  ]
 }
