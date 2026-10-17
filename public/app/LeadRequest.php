@@ -20,8 +20,11 @@ final class LeadRequest
      * Телефон: только цифры, пробелы, + ( ) - . и типографские тире/пробелы.
      */
     const PHONE_CHARS = '/^[0-9+().\- \x{00A0}\x{2009}\x{202F}\x{2010}-\x{2015}]*$/u';
-    /** E-mail: латинская локальная часть без «..» и точек по краям; домен с точкой, допустима кириллица. */
-    const EMAIL_PATTERN = '/^(?!\.)(?!.*\.\.)[A-Za-z0-9!#$%&\'*+\/=?^_`{|}~.\-]{1,64}(?<!\.)@(?:[\p{L}\p{N}](?:[\p{L}\p{N}\-]{0,61}[\p{L}\p{N}])?\.)+(?:\p{L}{2,63}|xn--[a-z0-9\-]{1,59})$/iu';
+    /**
+     * E-mail: латинская локальная часть без «..» и точек по краям; домен с точкой, допустима кириллица.
+     * Без lookbehind: в клиенте он роняет модуль формы в Safari до 16.4, а шаблон должен совпадать.
+     */
+    const EMAIL_PATTERN = '/^(?!\.)(?!.*\.\.)(?![^@]*\.@)[A-Za-z0-9!#$%&\'*+\/=?^_`{|}~.\-]{1,64}@(?:[\p{L}\p{N}](?:[\p{L}\p{N}\-]{0,61}[\p{L}\p{N}])?\.)+(?:\p{L}{2,63}|xn--[a-z0-9\-]{1,59})$/iu';
 
     /** @var array<string,string> */
     private $fields = [];
@@ -122,13 +125,24 @@ final class LeadRequest
         }
 
         if ($type === 'price') {
-            if ($f['format'] !== '' && !isset(self::FORMATS[$f['format']])) {
+            // Без JS поле «Нужный размер» видно всегда. Размер введён, а формат не отмечен —
+            // значит, нужен другой размер; отмечен 57 × 40 или 80 × 80 — переспрашиваем,
+            // а не стираем введённое молча.
+            if ($f['format'] === '' && $f['format_custom'] !== '') {
+                $f['format'] = 'other';
+            }
+            $knownFormat = isset(self::FORMATS[$f['format']]);
+            if ($f['format'] !== '' && !$knownFormat) {
                 $e['format'] = 'Выберите формат из списка.';
             }
             if ($f['format'] === 'other' && $f['format_custom'] === '') {
                 $e['format_custom'] = 'Укажите нужный размер ленты.';
             } elseif (Text::length($f['format_custom']) > 100) {
                 $e['format_custom'] = "Размер{$nb}— не{$nb}больше 100{$nb}символов.";
+            } elseif ($knownFormat && $f['format'] !== 'other' && $f['format_custom'] !== '') {
+                $chosen = str_replace(' ', $nb, self::FORMATS[$f['format']]);
+                $e['format_custom'] = "Выбран формат {$chosen}, а{$nb}размер указан свой. "
+                    . "Отметьте «Другой размер» или{$nb}очистите это поле.";
             }
             if ($f['format'] !== 'other') {
                 $f['format_custom'] = '';

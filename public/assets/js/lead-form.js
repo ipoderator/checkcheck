@@ -31,11 +31,15 @@ const MESSAGES = {
 // Правила полей — те же, что в public/app/LeadRequest.php (PHONE_CHARS, EMAIL_PATTERN):
 // при правке менять в обоих местах; tests/e2e/form.spec.mjs сверяет клиент и сервер.
 const PHONE_CHARS = /^[0-9+().\- \u00A0\u2009\u202F\u2010-\u2015]*$/u;
-const EMAIL_PATTERN = /^(?!\.)(?!.*\.\.)[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]{1,64}(?<!\.)@(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?\.)+(?:\p{L}{2,63}|xn--[a-z0-9-]{1,59})$/iu;
+// Без lookbehind: Safari до 16.4 не разбирает его и не загружает весь модуль формы.
+const EMAIL_PATTERN = /^(?!\.)(?!.*\.\.)(?![^@]*\.@)[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]{1,64}@(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?\.)+(?:\p{L}{2,63}|xn--[a-z0-9-]{1,59})$/iu;
 const PHONE_INVALID = `Укажите телефон: 10${NB}цифр после +7 или${NB}8.`;
 const EMAIL_INVALID = `Проверьте адрес e-mail${NB}— например, name@mail.ru.`;
 
 const textLength = (value) => [...value].length;
+// Однострочное значение как у сервера (Text::line): управляющие символы → пробел, края обрезаны.
+// Иначе телефон с табом внутри (вставка из таблицы) клиент отклонял бы, а сервер принимал.
+const line = (value) => value.replace(/[\x00-\x1F\x7F]+/g, ' ').trim();
 
 /** +7XXXXXXXXXX или null — те же правила, что у сервера: буквы и прочие знаки — не телефон. */
 export function normalizePhone(phone) {
@@ -49,29 +53,29 @@ export function normalizePhone(phone) {
 /** Ошибки полей по-русски; ключи — имена полей (как в ответе 422). */
 export function validate(values) {
   const errors = {};
-  const name = values.name.trim();
+  const name = line(values.name);
   const nameLength = textLength(name);
   if (nameLength === 0) errors.name = 'Укажите имя.';
   else if (nameLength < 2) errors.name = `Имя слишком короткое${NB}— нужно хотя бы 2${NB}символа.`;
   else if (nameLength > 100) errors.name = `Имя слишком длинное${NB}— не${NB}больше 100${NB}символов.`;
 
-  const phone = values.phone.trim();
+  const phone = line(values.phone);
   if (phone === '') errors.phone = 'Укажите телефон.';
   else if (!normalizePhone(phone)) errors.phone = PHONE_INVALID;
 
-  const email = values.email.trim();
+  const email = line(values.email);
   if (email !== '') {
     if (textLength(email) > 254) errors.email = `Адрес e-mail слишком длинный${NB}— не${NB}больше 254${NB}символов.`;
     else if (!EMAIL_PATTERN.test(email)) errors.email = EMAIL_INVALID;
   }
-  if (textLength(values.company.trim()) > 150) errors.company = `Название компании${NB}— не${NB}больше 150${NB}символов.`;
-  if (textLength(values.region.trim()) > 150) errors.region = `Регион${NB}— не${NB}больше 150${NB}символов.`;
+  if (textLength(line(values.company)) > 150) errors.company = `Название компании${NB}— не${NB}больше 150${NB}символов.`;
+  if (textLength(line(values.region)) > 150) errors.region = `Регион${NB}— не${NB}больше 150${NB}символов.`;
 
   if (values.type === 'price') {
-    const custom = values.format_custom.trim();
+    const custom = line(values.format_custom);
     if (values.format === 'other' && custom === '') errors.format_custom = 'Укажите нужный размер ленты.';
     else if (textLength(custom) > 100) errors.format_custom = `Размер${NB}— не${NB}больше 100${NB}символов.`;
-    if (textLength(values.quantity.trim()) > 100) errors.quantity = `Количество${NB}— не${NB}больше 100${NB}символов.`;
+    if (textLength(line(values.quantity)) > 100) errors.quantity = `Количество${NB}— не${NB}больше 100${NB}символов.`;
   }
   if (textLength(values.message.trim()) > 2000) errors.message = `Комментарий${NB}— не${NB}больше 2000${NB}символов.`;
   if (!values.consent) errors.consent = `Нужно согласие на${NB}обработку персональных данных.`;

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, existsSync, mkdirSync, writeFileSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
 import { startPhpServer, postLead, validLead } from '../helpers/php-server.mjs';
+import { parseMail } from '../helpers/mail.mjs';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
 const FAKE_TOKEN = ['fake', 'token'].join('-');
@@ -77,6 +78,32 @@ describe('форма без JS: ответ — страница для чело�
     assertPage(res);
     assert.match(res.text, /Форма пока не(?:&nbsp;|\s)подключена/);
     assert.match(res.text, /tel:\+79202431957/);
+  });
+
+  // Без JS поле «Нужный размер» видно всегда: введённый размер не должен пропадать молча.
+  test('свой размер без отметки формата → заявка «Другой размер» с этим размером', async () => {
+    const mailSrv = await startPhpServer({ env: { LEAD_EMAIL_TO: OWNER } });
+    try {
+      const res = await postLead(mailSrv.baseUrl, validLead({ format: undefined, format_custom: '57 × 30', form_elapsed_ms: undefined }),
+        { headers: { Accept: 'text/html' } });
+      assert.equal(res.status, 200, res.text);
+      assertPage(res);
+      const mails = mailSrv.outbox();
+      assert.equal(mails.length, 1);
+      assert.match(parseMail(mails[0]).body, /Другой размер: 57 × 30/);
+    } finally { await mailSrv.stop(); }
+  });
+
+  test('свой размер при отмеченном 57 × 40 → 422, ошибка у «Нужный размер», размер не теряется молча', async () => {
+    const res = await postLead(srv.baseUrl, validLead({ format: '57x40', format_custom: '57 × 30', form_elapsed_ms: undefined }),
+      { headers: { Accept: 'text/html' } });
+    assert.equal(res.status, 422, res.text);
+    assertPage(res);
+    assert.match(res.text, /<strong>Нужный размер:<\/strong>[^<]*Другой размер/);
+    const json = await postLead(srv.baseUrl, validLead({ format: '80x80', format_custom: '57 × 30' }));
+    assert.equal(json.status, 422);
+    assert.match(json.body.errors.format_custom, /«Другой размер»/);
+    assert.equal(json.body.errors.format, undefined);
   });
 
   test('принятая заявка → 200 страница «Заявка принята»', async () => {
@@ -153,6 +180,8 @@ describe('валидация полей → 422', () => {
     assert.equal((await errorsFor({ phone: '8 920 ABC 00 00 0' })).phone, PHONE_INVALID);
     assert.equal((await errorsFor({ phone: '12345' })).phone, PHONE_INVALID);
     assert.equal((await errorsFor({ phone: '+7 (920) 000-00-00', name: '' })).phone, undefined);
+    // Таб внутри номера (вставка из таблицы) — как пробел; клиент решает так же (tests/e2e/form.spec.mjs).
+    assert.equal((await errorsFor({ phone: '8 920\t243-19-57', name: '' })).phone, undefined);
   });
 
   test('email: «a..b@mail.ru», без точки в домене — ошибка с одним текстом; кириллический домен допустим', async () => {

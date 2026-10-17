@@ -228,6 +228,10 @@ test('клиент и сервер проверяют поля одинаков�
     { name: '  ' },
     { name: ' 　' },
     { name: ' Я ' },
+    { phone: '8 920\t243-19-57' },
+    { email: 'ivan.@mail.ru' },
+    { email: '.ivan@mail.ru' },
+    { email: 'i.van@mail.ru' },
   ];
   const client = await page.evaluate(async ({ base, cases }) => {
     const { validate } = await import('/assets/js/lead-form.js');
@@ -248,6 +252,10 @@ test('клиент и сервер проверяют поля одинаков�
   expect(client[3].email).toBe(EMAIL_INVALID);
   expect(client[5].email).toBeUndefined();
   expect(client[7].name).toBe('Укажите имя.');
+  // Таб внутри номера: оба принимают (сервер заменяет управляющие символы пробелом).
+  expect(client[10].phone).toBeUndefined();
+  expect(client[11].email).toBe(EMAIL_INVALID);
+  expect(client[13].email).toBeUndefined();
 
   // То же в самой форме: телефон с припиской — ошибка у поля, запроса нет.
   let requests = 0;
@@ -361,5 +369,26 @@ test('без JS: поле «Нужный размер» видно и уходи
   await expect(page.locator('h1')).toContainText(/Форма пока не\s+подключена/);
   await expect(page.locator('a', { hasText: /Вернуться к\s+форме/ })).toHaveAttribute('href', '../#order');
   expect(await page.evaluate(() => document.body.innerText)).not.toContain('"ok"');
+  await context.close();
+});
+
+test('в модуле формы нет lookbehind: старый Safari (до 16.4) иначе не загрузит модуль целиком', async ({ page }) => {
+  const res = await page.request.get('/assets/js/lead-form.js');
+  expect(res.ok()).toBe(true);
+  expect(await res.text()).not.toMatch(/\(\?<[=!]/);
+});
+
+test('без JS: свой размер при отмеченном 57 × 40 — ошибка у «Нужный размер», а не молчаливая потеря', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto('/');
+  await page.fill('#lead-name', 'Иван Петров');
+  await page.fill('#lead-phone', '8 920 000-00-00');
+  await page.check('#lead-format-57x40');
+  await page.fill('#lead-format_custom', '57 × 30');
+  await page.check('#lead-consent');
+  await page.click('[data-lead-submit]');
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('li', { hasText: 'Нужный размер:' })).toContainText('«Другой размер»');
   await context.close();
 });
