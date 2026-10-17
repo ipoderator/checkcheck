@@ -626,8 +626,34 @@ img { color: transparent; font-size: 0; }
 .ticker__track {
   display: flex;
   width: max-content;
-  animation: ticker 48s linear infinite;
 }
+/* Строка едет, только когда работает main.js: без JS её нечем остановить (WCAG 2.2.2). */
+[data-ui-ready] .ticker__track { animation: ticker 48s linear infinite; }
+.ticker.is-paused .ticker__track { animation-play-state: paused; }
+.ticker__toggle {
+  display: none;
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: var(--gutter);
+  translate: 0 -50%;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--paper);
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  box-shadow: -24px 0 24px 8px var(--ink);
+}
+[data-ui-ready] .ticker__toggle { display: grid; }
+.ticker__toggle:hover { background: var(--paper); color: var(--ink); }
+.ticker__toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.ticker__icon { grid-area: 1 / 1; width: 16px; height: 16px; }
+.ticker__icon--play, .ticker.is-paused .ticker__icon--pause { display: none; }
+.ticker.is-paused .ticker__icon--play { display: block; }
 .ticker__track span {
   display: inline-flex;
   align-items: center;
@@ -1416,6 +1442,7 @@ img { color: transparent; font-size: 0; }
   .js [data-reveal], .js [data-reveal]:not(.is-visible) { opacity: 1; transform: none; }
   .js .tape-mark:not(.is-printed) { opacity: 1; }
   .hero__roll { will-change: auto; }
+  [data-ui-ready] .ticker__toggle { display: none; }
 }
 
 /* ---------- Печать ---------- */

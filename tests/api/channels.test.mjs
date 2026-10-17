@@ -100,6 +100,33 @@ describe('Telegram', () => {
     } finally { await srv.stop(); await tg.close(); }
   });
 
+  // Bot API отвергает (400) текст длиннее 4096 единиц UTF-16. JS-строка считает именно их.
+  test('длинная заявка: текст ≤ 4096 единиц UTF-16, с «…», без разорванных суррогатов, сущностей и тегов', async () => {
+    const tg = await startFakeTelegram();
+    const srv = await startPhpServer({ env: telegramEnv(tg) });
+    try {
+      const cases = [
+        { message: '😀'.repeat(2000), company: 'Ромашка' }, // 4000 единиц только в комментарии
+        { message: '&'.repeat(2000), company: '<'.repeat(150), region: '>'.repeat(150) }, // экранирование ×4–5
+        { message: 'а😀'.repeat(1000), page: `/${'&'.repeat(299)}` },
+      ];
+      for (const fields of cases) {
+        const res = await postLead(srv.baseUrl, validLead(fields));
+        assert.equal(res.status, 200, res.text + srv.log());
+      }
+      assert.equal(tg.requests.length, cases.length);
+      for (const { body: { text } } of tg.requests) {
+        assert.ok(text.length <= 4096, `длина ${text.length}`);
+        assert.ok(text.includes('…'), 'нет знака обрезки');
+        assert.ok(text.isWellFormed(), 'разорвана суррогатная пара');
+        assert.doesNotMatch(text, /&(?!(?:amp|lt|gt);)/, 'разорвана HTML-сущность');
+        assert.equal((text.match(/<b>/g) || []).length, (text.match(/<\/b>/g) || []).length, 'несбалансированные теги');
+        assert.ok(text.includes('+79202431957'), 'потерян телефон');
+        assert.ok(text.includes('Время:'), 'потеряно время');
+      }
+    } finally { await srv.stop(); await tg.close(); }
+  });
+
   test('слишком быстрая отправка и ловушка ничего не шлют в Telegram', async () => {
     const tg = await startFakeTelegram();
     const srv = await startPhpServer({ env: telegramEnv(tg) });

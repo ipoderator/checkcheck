@@ -97,6 +97,48 @@ test('prefers-reduced-motion: анимаций нет, всё содержимо
   expect(state).toMatchObject({ running: 0, hidden: 0, tapeMoved: 0 });
 });
 
+// WCAG 2.2.2: движущийся дольше 5 с текст можно остановить.
+test('бегущая строка: видимая кнопка паузы/пуска с aria-label, работает с клавиатуры', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  const toggle = page.locator('.ticker [data-ticker-toggle]');
+  const trackState = () => page.evaluate(() => {
+    const anims = document.querySelector('.ticker__track').getAnimations();
+    return anims.length ? anims[0].playState : 'none';
+  });
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-label', 'Остановить бегущую строку');
+  await expect.poll(trackState).toBe('running');
+
+  await toggle.click();
+  await expect.poll(trackState).toBe('paused');
+  await expect(toggle).toHaveAttribute('aria-label', 'Запустить бегущую строку');
+
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(trackState).toBe('running');
+  await expect(toggle).toHaveAttribute('aria-label', 'Остановить бегущую строку');
+  const box = await toggle.boundingBox();
+  expect(box.width).toBeGreaterThanOrEqual(44);
+  expect(box.height).toBeGreaterThanOrEqual(44);
+});
+
+test('бегущая строка: при reduced-motion и без JS стоит, кнопки нет', async ({ page, browser }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await expect(page.locator('.ticker__track')).toBeVisible();
+  await expect(page.locator('[data-ticker-toggle]')).toBeHidden();
+  expect(await page.evaluate(() => document.querySelector('.ticker__track').getAnimations().length)).toBe(0);
+
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const noJs = await context.newPage();
+  await noJs.goto('/');
+  await expect(noJs.locator('.ticker__track')).toBeVisible();
+  await expect(noJs.locator('[data-ticker-toggle]')).toBeHidden();
+  expect(await noJs.evaluate(() => document.querySelector('.ticker__track').getAnimations().length)).toBe(0);
+  await context.close();
+});
+
 test('без JS всё содержимое видно', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();

@@ -72,6 +72,24 @@ test('privacy.html описывает данные, цели, сроки и пр
   for (const word of ['Какие данные', 'Цели', 'Сроки', 'Права', 'отозвать']) expect(text).toContain(word);
 });
 
+for (const path of ['/privacy.html', '/consent.html']) {
+  test(`${path}: называет передачу заявки через Telegram (трансграничную) и по e-mail`, async ({ page }) => {
+    await page.goto(path);
+    const text = await page.evaluate(() => document.body.innerText);
+    expect(text).toContain('Telegram Messenger Inc.');
+    expect(text).toMatch(/трансграничн/i);
+    expect(text).toMatch(/электронн\S*\sпочт/i);
+  });
+}
+
+test('privacy.html: срок хранения хеша IP описан так, как работает лимит частоты', async ({ page }) => {
+  await page.goto('/privacy.html');
+  const text = await page.evaluate(() => document.body.innerText);
+  // Записи чистятся только при следующих заявках, а не по таймеру.
+  expect(text).not.toMatch(/не\sпозднее\sчем\sчерез\sчас/);
+  expect(text).toMatch(/при\sпоследующих\sобращениях\sк\sформе,\sесли\s\S+\sстарше\sчаса/);
+});
+
 test('404.html: оборванная лента и ссылка на главную', async ({ page }) => {
   await page.goto('/404.html');
   await expect(page.locator('h1')).toContainText('404');

@@ -203,8 +203,20 @@ function initParallax() {
   update();
 }
 
+/* ---------- Бегущая строка: пауза и пуск (WCAG 2.2.2) ---------- */
+function initTicker() {
+  const ticker = document.querySelector('.ticker');
+  const toggle = ticker && ticker.querySelector('[data-ticker-toggle]');
+  if (!toggle) return;
+  toggle.addEventListener('click', () => {
+    const paused = ticker.classList.toggle('is-paused');
+    toggle.setAttribute('aria-label', paused ? 'Запустить бегущую строку' : 'Остановить бегущую строку');
+  });
+}
+
 initHeader();
 initMenu();
+initTicker();
 initActiveSection();
 initReveal();
 initTape();

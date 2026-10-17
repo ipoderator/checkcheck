@@ -42,7 +42,13 @@ test('пустой конфиг: «Форма пока не подключена
   await expect(page.locator('#lead-phone')).toHaveValue('+7 (920) 111-22-33');
   await expect(page.locator('[data-lead-submit]')).toBeEnabled();
 
+  // Согласие даёт только тот, кто сейчас за компьютером: в черновик оно не пишется.
+  await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY)).toContain('Мария');
+  const saved = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY));
+  expect(saved).not.toHaveProperty('consent');
+
   await page.reload();
+  await expect(page.locator('#lead-consent')).not.toBeChecked();
   await expect(page.locator('#lead-name')).toHaveValue('Мария');
   await expect(page.locator('#lead-email')).toHaveValue('maria@example.ru');
   await expect(page.locator('#lead-format-80x80')).toBeChecked();

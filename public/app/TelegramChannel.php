@@ -55,22 +55,98 @@ final class TelegramChannel implements LeadChannel
         }
     }
 
-    /** Текст сообщения в разметке HTML Bot API; данные посетителя экранированы. */
+    /** Предел Bot API для sendMessage — в единицах UTF-16. */
+    const MAX_TEXT_UNITS = 4096;
+
+    /**
+     * Текст сообщения в разметке HTML Bot API; данные посетителя экранированы.
+     * Длинная заявка не должна давать 400: самые длинные значения укорачиваются
+     * (со знаком «…»), разметка, телефон и время остаются целыми.
+     */
     public static function formatMessage(array $lead): string
     {
-        $lines = ['<b>Заявка с сайта: ' . self::escape($lead['type_label']) . '</b>', ''];
+        $rows = [];
         foreach (LeadRequest::describe($lead) as $row) {
-            $value = self::escape($row[1]);
-            $lines[] = strpos($row[1], "\n") === false
-                ? '<b>' . $row[0] . ':</b> ' . $value
-                : '<b>' . $row[0] . ":</b>\n" . $value;
+            $rows[] = [$row[0], self::escape($row[1]), strpos($row[1], "\n") !== false];
+        }
+        $time = self::escape(LeadRequest::displayTime($lead['received_at']));
+        $page = $lead['page'] !== '' ? self::escape($lead['page']) : null;
+
+        $text = self::assemble((string) $lead['type_label'], $rows, $time, $page);
+        $overflow = self::utf16Length($text) - self::MAX_TEXT_UNITS;
+        while ($overflow > 0) {
+            // Укорачиваем самое длинное значение; телефон не трогаем — по нему перезванивают.
+            $longest = -1;
+            $longestUnits = 0;
+            foreach ($rows as $i => $row) {
+                $units = self::utf16Length($row[1]);
+                if ($row[0] !== 'Телефон' && $units > $longestUnits) {
+                    $longest = $i;
+                    $longestUnits = $units;
+                }
+            }
+            $pageUnits = $page === null ? 0 : self::utf16Length($page);
+            if ($pageUnits > $longestUnits) {
+                $page = self::cut($page, $pageUnits - $overflow - 1) . '…';
+            } elseif ($longest >= 0 && $longestUnits > 1) {
+                $rows[$longest][1] = self::cut($rows[$longest][1], $longestUnits - $overflow - 1) . '…';
+            } else {
+                break;
+            }
+            $text = self::assemble((string) $lead['type_label'], $rows, $time, $page);
+            $overflow = self::utf16Length($text) - self::MAX_TEXT_UNITS;
+        }
+        return $text;
+    }
+
+    /** @param array<int,array{0:string,1:string,2:bool}> $rows значения уже экранированы */
+    private static function assemble(string $typeLabel, array $rows, string $time, $page): string
+    {
+        $lines = ['<b>Заявка с сайта: ' . self::escape($typeLabel) . '</b>', ''];
+        foreach ($rows as $row) {
+            $lines[] = $row[2]
+                ? '<b>' . $row[0] . ":</b>\n" . $row[1]
+                : '<b>' . $row[0] . ':</b> ' . $row[1];
         }
         $lines[] = '';
-        $lines[] = '<b>Время:</b> ' . self::escape(LeadRequest::displayTime($lead['received_at']));
-        if ($lead['page'] !== '') {
-            $lines[] = '<b>Страница:</b> ' . self::escape($lead['page']);
+        $lines[] = '<b>Время:</b> ' . $time;
+        if ($page !== null) {
+            $lines[] = '<b>Страница:</b> ' . $page;
         }
         return implode("\n", $lines);
+    }
+
+    /** Длина в единицах UTF-16, как считает Telegram: символ вне BMP (эмодзи) — две единицы. */
+    private static function utf16Length(string $value): int
+    {
+        $chars = preg_match_all('/./su', $value);
+        $astral = preg_match_all('/[\x{10000}-\x{10FFFF}]/u', $value);
+        if ($chars === false || $astral === false) {
+            return strlen($value); // невалидный UTF-8 — верхняя оценка
+        }
+        return $chars + $astral;
+    }
+
+    /**
+     * Начало экранированной строки не длиннее $units единиц UTF-16.
+     * Режет только между символами (UTF-8 — пара суррогатов не рвётся) и не внутри &amp;-сущности.
+     */
+    private static function cut(string $escaped, int $units): string
+    {
+        if ($units <= 0 || preg_match_all('/&(?:[a-zA-Z]+|#\d+);|./su', $escaped, $m) === false) {
+            return '';
+        }
+        $out = '';
+        $used = 0;
+        foreach ($m[0] as $token) {
+            $size = $token[0] === '&' && strlen($token) > 1 ? strlen($token) : (strlen($token) === 4 ? 2 : 1);
+            if ($used + $size > $units) {
+                break;
+            }
+            $out .= $token;
+            $used += $size;
+        }
+        return $out;
     }
 
     private static function escape(string $value): string

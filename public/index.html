@@ -163,8 +163,12 @@
         </div>
       </div>
 
-      <div class="ticker" aria-hidden="true">
-        <div class="ticker__track">
+      <div class="ticker">
+        <button class="ticker__toggle" type="button" data-ticker-toggle aria-label="Остановить бегущую строку">
+          <svg class="ticker__icon ticker__icon--pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor"/></svg>
+          <svg class="ticker__icon ticker__icon--play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 3l8 5-8 5z" fill="currentColor"/></svg>
+        </button>
+        <div class="ticker__track" aria-hidden="true">
           <span>Кассовая лента</span><span>Немецкие материалы</span><span>Производство в&nbsp;Лейпциге</span><span>Напрямую от&nbsp;производителя</span><span>Оптовые поставки</span><span>Отправка в&nbsp;любой регион России</span>
           <span>Кассовая лента</span><span>Немецкие материалы</span><span>Производство в&nbsp;Лейпциге</span><span>Напрямую от&nbsp;производителя</span><span>Оптовые поставки</span><span>Отправка в&nbsp;любой регион России</span>
         </div>
@@ -552,7 +556,7 @@
 
               <div class="field field--check">
                 <div class="check">
-                  <input class="check__input" id="lead-consent" name="consent" type="checkbox" value="1" required aria-required="true">
+                  <input class="check__input" id="lead-consent" name="consent" type="checkbox" value="1" autocomplete="off" required aria-required="true">
                   <label class="check__label" for="lead-consent">Даю согласие на&nbsp;обработку персональных данных на&nbsp;условиях <a href="consent.html" target="_blank" rel="noopener">согласия</a> и <a href="privacy.html" target="_blank" rel="noopener">политики обработки персональных данных</a>.</label>
                 </div>
                 <p class="field-error" id="lead-consent-error" data-error-for="consent"></p>

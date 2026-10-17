@@ -10,7 +10,8 @@ const PHONE_HTML = `<a href="tel:+79202431957">8${NB}920${NB}243-19-57</a>`;
 const EMAIL_HTML = '<a href="mailto:ipoderator@yandex.ru">ipoderator@yandex.ru</a>';
 
 const FIELD_ORDER = ['type', 'name', 'phone', 'email', 'company', 'region', 'format', 'format_custom', 'quantity', 'message', 'consent'];
-const DRAFT_FIELDS = ['type', 'name', 'phone', 'email', 'company', 'region', 'format', 'format_custom', 'quantity', 'message', 'consent'];
+// Согласие в черновик не пишется: на общем компьютере его иначе «давал» бы предыдущий посетитель.
+const DRAFT_FIELDS = ['type', 'name', 'phone', 'email', 'company', 'region', 'format', 'format_custom', 'quantity', 'message'];
 const PRICE_ONLY = ['format', 'format_custom', 'quantity'];
 const FORMAT_LABELS = { '57x40': `57${NB}×${NB}40`, '80x80': `80${NB}×${NB}80`, other: 'другой размер' };
 
@@ -122,8 +123,6 @@ function initLeadForm(form) {
       if (!(key in data) || key === 'type') continue;
       if (key === 'format') {
         form.querySelectorAll('input[name="format"]').forEach((radio) => { radio.checked = radio.value === data.format; });
-      } else if (key === 'consent') {
-        els.namedItem('consent').checked = data.consent === true;
       } else if (typeof data[key] === 'string') {
         els.namedItem(key).value = data[key];
       }
@@ -135,7 +134,9 @@ function initLeadForm(form) {
   function saveDraft() {
     clearTimeout(saveTimer);
     saveTimer = 0;
-    const data = values();
+    const current = values();
+    const data = {};
+    for (const key of DRAFT_FIELDS) data[key] = current[key];
     const empty = DRAFT_FIELDS.every((key) => key === 'type' || !data[key]);
     if (empty) storage.clear();
     else storage.write(data);
