@@ -74,7 +74,7 @@ README.md
 | 503 | `{"ok":false,"code":"not_configured"}` | не настроен ни Telegram (токен **и** chat id), ни e-mail (`LEAD_EMAIL_TO`) |
 | 502 | `{"ok":false,"code":"delivery_failed"}` | все настроенные каналы упали; заявка записана в `storage/failed-leads.jsonl` |
 
-Проверки идут в этом порядке: метод → ловушка/время → валидация → лимит → конфиг → доставка. Валидация идёт раньше «не настроено», чтобы посетитель сначала исправил поля.
+Проверки идут в этом порядке: метод → ловушка/время → валидация → конфиг → лимит → доставка. Валидация идёт раньше «не настроено», чтобы посетитель сначала исправил поля; «не настроено» не расходует лимит (вторая задача, ист. 62). Без `application/json` в `Accept` ответ — HTML-страница для человека (ист. 63).
 
 ### Конфиг — `app/Config.php`
 
@@ -117,10 +117,10 @@ interface LeadChannel { public function name(): string; public function isConfig
 
 | Файл | Где | Размер |
 |---|---|---|
+| `production-roll.webp` / `.png` | раздел «Производство», под тёмный фон `#141517`, край растворяется в фон | 1600 × 1200 |
 | `hero-roll.webp` / `.png` | первый экран: рулон с размотанной лентой, прозрачный фон | 1600 × 1600 |
 | `roll-57x40.webp` / `.png` | карточка формата | 1000 × 1000, прозрачный фон |
 | `roll-80x80.webp` / `.png` | карточка формата | 1000 × 1000, прозрачный фон |
-| `rolls-stack.webp` / `.png` | секция «Опт / производство»: стопка рулонов | 1600 × 1000 |
 | `og-image.png` | Open Graph | 1200 × 630 |
 | `favicon.svg` (в корне `public/`), `apple-touch-icon.png` (180) | иконки | |
 
@@ -157,3 +157,8 @@ interface LeadChannel { public function name(): string; public function isConfig
 - npm-скрипты: `dev`, `test`, `test:api`, `test:e2e`, `images`. e2e-сервер Playwright: `127.0.0.1:8091` (`E2E_PORT`), `MAIL_TRANSPORT=file`, конфиг пустой → `not_configured`. **Лимит 5 заявок с IP действует и в e2e** — успешные отправки в e2e подменять через `page.route` или держать ≤ 4 реальных.
 - `page` обрезается до 300 символов; у `type=partner` поля format/format_custom/quantity отбрасываются.
 - SMTP: при `SMTP_USER` и `SMTP_SECURE` ∉ {ssl,tls} клиент включает STARTTLS, если сервер его объявил, иначе ошибка канала (кроме localhost).
+
+## Вторая задача
+
+- Адрес сайта: `site.config.json` (`siteUrl`), `npm run set-site-url -- <url>` (`tools/set-site-url.mjs`). Пустой `siteUrl` → нет canonical/og:url/sitemap, ссылки корневые.
+- Правило «нет Лейпцига» проверяется тестом по `public/`, `README.md`, `tools/render`.
