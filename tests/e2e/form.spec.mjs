@@ -4,6 +4,9 @@
 import { test, expect } from '@playwright/test';
 
 const DRAFT_KEY = 'vsecheki:lead-draft:v1';
+const NB = '\u00A0';
+const PHONE_INVALID = `Укажите телефон: 10${NB}цифр после +7 или${NB}8.`;
+const EMAIL_INVALID = `Проверьте адрес e-mail${NB}— например, name@mail.ru.`;
 
 async function fillRequired(page, { name = 'Иван Петров', phone = '8 920 000-00-00' } = {}) {
   await page.fill('#lead-name', name);
@@ -76,7 +79,7 @@ test('ошибки полей по-русски у самих полей, фок
   await page.fill('#lead-email', '');
   await page.check('#lead-consent');
   await page.click('[data-lead-submit]');
-  await expect(page.locator('#lead-phone-error')).toContainText('Укажите российский номер');
+  await expect(page.locator('#lead-phone-error')).toHaveText(PHONE_INVALID);
   await expect(page.locator('#lead-phone')).toBeFocused();
   await expect(page.locator('#lead-name-error')).toHaveText('');
   await expect(page.locator('#lead-name')).not.toHaveAttribute('aria-invalid', 'true');
@@ -208,4 +211,155 @@ test('галочка согласия ссылается на политику �
   const label = page.locator('label[for="lead-consent"]');
   await expect(label.locator('a[href="consent.html"]')).toHaveCount(1);
   await expect(label.locator('a[href="privacy.html"]')).toHaveCount(1);
+});
+
+/* ---------- Правки по аудиту: одинаковые правила, фокус, озвучивание, отправка без JS ---------- */
+
+test('клиент и сервер проверяют поля одинаково и одними текстами', async ({ page }) => {
+  const base = { type: 'price', name: 'Иван', phone: '8 920 000-00-00', email: '', company: '', region: '', format: '', format_custom: '', quantity: '', message: '' };
+  const cases = [
+    { phone: '+7 920 000-00-00 звонить после обеда' },
+    { phone: '8 920 ABC 00 00 0' },
+    { phone: '12345' },
+    { email: 'a..b@mail.ru' },
+    { email: 'ivan@mail' },
+    { email: 'ivan@почта.рф' },
+    { email: 'ivan@xn--80a1acny.xn--p1ai' },
+    { name: '  ' },
+    { name: ' 　' },
+    { name: ' Я ' },
+  ];
+  const client = await page.evaluate(async ({ base, cases }) => {
+    const { validate } = await import('/assets/js/lead-form.js');
+    return cases.map((c) => validate({ ...base, ...c, consent: true }));
+  }, { base, cases });
+  for (const [i, c] of cases.entries()) {
+    const res = await page.request.post('/api/lead.php', {
+      form: { ...base, ...c, consent: '1', website: '', form_elapsed_ms: '10000', page: '/' },
+      headers: { Accept: 'application/json' },
+    });
+    const body = await res.json();
+    const server = body.code === 'validation' ? body.errors : {};
+    const field = Object.keys(c)[0];
+    expect(client[i][field], `${field}=${JSON.stringify(c[field])}: клиент «${client[i][field]}», сервер «${server[field]}»`).toBe(server[field]);
+    expect(res.status(), JSON.stringify(c)).not.toBe(429);
+  }
+  expect(client[0].phone).toBe(PHONE_INVALID);
+  expect(client[3].email).toBe(EMAIL_INVALID);
+  expect(client[5].email).toBeUndefined();
+  expect(client[7].name).toBe('Укажите имя.');
+
+  // То же в самой форме: телефон с припиской — ошибка у поля, запроса нет.
+  let requests = 0;
+  await mockLead(page, 200, { ok: true }, { onRequest: () => { requests += 1; } });
+  await fillRequired(page, { phone: '+7 920 000-00-00 звонить после обеда' });
+  await page.fill('#lead-email', 'a..b@mail.ru');
+  await page.click('[data-lead-submit]');
+  await expect(page.locator('#lead-phone-error')).toHaveText(PHONE_INVALID);
+  await expect(page.locator('#lead-email-error')).toHaveText(EMAIL_INVALID);
+  await expect(page.locator('#lead-phone')).toBeFocused();
+  expect(requests).toBe(0);
+});
+
+for (const [title, setup] of [
+  ['нет связи', (page) => page.route('**/api/lead.php', (route) => route.abort('internetdisconnected'))],
+  ['503 не настроено', (page) => mockLead(page, 503, { ok: false, code: 'not_configured' })],
+  ['429', (page) => mockLead(page, 429, { ok: false, code: 'rate_limited' })],
+]) {
+  test(`после ошибки (${title}) фокус на статусе, а не на body`, async ({ page }) => {
+    await setup(page);
+    await fillRequired(page);
+    await page.locator('[data-lead-submit]').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'error', { timeout: 10000 });
+    await expect(page.locator('[data-lead-status]')).toBeFocused();
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement.tagName)).not.toBe('BODY');
+  });
+}
+
+test('ошибка поля от сервера: фокус на поле; ошибка без поля — на статусе', async ({ page }) => {
+  await mockLead(page, 422, { ok: false, code: 'validation', errors: { type: 'Выберите тип заявки.' } });
+  await fillRequired(page);
+  await page.click('[data-lead-submit]');
+  await expect(page.locator('[data-lead-status]')).toContainText('Выберите тип заявки.', { timeout: 10000 });
+  await expect(page.locator('[data-lead-status]')).toBeFocused();
+});
+
+test('успех озвучивается: живая область остаётся в дереве доступности с текстом «Заявка принята»', async ({ page }) => {
+  await mockLead(page, 200, { ok: true });
+  await fillRequired(page);
+  await page.click('[data-lead-submit]');
+  await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'success', { timeout: 10000 });
+  const status = page.locator('[data-lead-status]');
+  expect(await status.evaluate((el) => getComputedStyle(el).display)).not.toBe('none');
+  await expect(status).toHaveAttribute('role', 'status');
+  expect(await status.ariaSnapshot()).toMatch(/status:.*Заявка принята/s);
+});
+
+test('во время отправки «Очистить» и вкладки недоступны', async ({ page }) => {
+  await mockLead(page, 503, { ok: false, code: 'not_configured' }, { delay: 1500 });
+  await fillRequired(page);
+  await page.click('[data-lead-submit]');
+  await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'sending');
+  await expect(page.locator('[data-lead-clear]')).toBeDisabled();
+  await expect(page.locator('[data-lead-type="partner"]')).toBeDisabled();
+  await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'error', { timeout: 10000 });
+  await expect(page.locator('[data-lead-clear]')).toBeEnabled();
+  await expect(page.locator('[data-lead-type="partner"]')).toBeEnabled();
+});
+
+test('«данные сохранены» не пишется, если поля пусты или опустели', async ({ page }) => {
+  await page.click('[data-lead-submit]');
+  await expect(page.locator('[data-lead-status]')).toContainText('Проверьте поля');
+  await expect(page.locator('[data-lead-status]')).not.toContainText(/сохран/i);
+
+  await mockLead(page, 503, { ok: false, code: 'not_configured' }, { delay: 1500 });
+  await fillRequired(page);
+  await page.click('[data-lead-submit]');
+  await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'sending');
+  await page.fill('#lead-name', '');
+  await page.fill('#lead-phone', '');
+  await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'error', { timeout: 10000 });
+  const status = page.locator('[data-lead-status]');
+  await expect(status).toContainText(/Форма пока не\s+подключена/);
+  await expect(status).not.toContainText(/сохран/i);
+});
+
+test('нет ответа 20 с: не утверждаем, что заявка не дошла, и предлагаем позвонить', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('/');
+  await page.route('**/api/lead.php', () => { /* сервер молчит */ });
+  await fillRequired(page);
+  await page.click('[data-lead-submit]');
+  await page.clock.runFor(3500);
+  await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'sending');
+  await page.clock.runFor(21000);
+  const status = page.locator('[data-lead-status]');
+  await expect(status).toContainText(/не\s+ответил/);
+  await expect(status).not.toContainText(/заявка не\s+отправлена/);
+  await expect(status).toContainText(/8\s920\s243-19-57/);
+  await expect(page.locator('#lead-name')).toHaveValue('Иван Петров');
+});
+
+test('без JS: поле «Нужный размер» видно и уходит на сервер, ответ — страница, а не JSON', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto('/');
+  await expect(page.locator('#lead-format_custom')).toBeVisible();
+  await page.fill('#lead-name', 'Иван Петров');
+  await page.fill('#lead-phone', '8 920 000-00-00');
+  await page.check('#lead-format-other');
+  await page.fill('#lead-format_custom', '57 × 30');
+  await page.check('#lead-consent');
+  const [request] = await Promise.all([
+    page.waitForRequest('**/api/lead.php'),
+    page.click('[data-lead-submit]'),
+  ]);
+  expect(request.postData()).toMatch(/format_custom=57\+%C3%97\+30/);
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('h1')).toContainText(/Форма пока не\s+подключена/);
+  await expect(page.locator('a', { hasText: /Вернуться к\s+форме/ })).toHaveAttribute('href', '../#order');
+  expect(await page.evaluate(() => document.body.innerText)).not.toContain('"ok"');
+  await context.close();
 });

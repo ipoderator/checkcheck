@@ -20,3 +20,4 @@ require_once __DIR__ . '/TelegramChannel.php';
 require_once __DIR__ . '/SmtpClient.php';
 require_once __DIR__ . '/MailChannel.php';
 require_once __DIR__ . '/LeadService.php';
+require_once __DIR__ . '/LeadPage.php';

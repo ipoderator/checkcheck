@@ -14,6 +14,14 @@ final class LeadRequest
     const FORMATS = ['57x40' => '57 × 40', '80x80' => '80 × 80', 'other' => 'Другой размер'];
     /** Минимальное время заполнения формы (form_elapsed_ms, измеряет браузер), мс. */
     const MIN_FILL_MS = 3000;
+    /**
+     * Правила полей — те же, что в public/assets/js/lead-form.js (PHONE_CHARS, EMAIL_PATTERN):
+     * при правке менять в обоих местах, тест tests/e2e/form.spec.mjs сверяет клиент и сервер.
+     * Телефон: только цифры, пробелы, + ( ) - . и типографские тире/пробелы.
+     */
+    const PHONE_CHARS = '/^[0-9+().\- \x{00A0}\x{2009}\x{202F}\x{2010}-\x{2015}]*$/u';
+    /** E-mail: латинская локальная часть без «..» и точек по краям; домен с точкой, допустима кириллица. */
+    const EMAIL_PATTERN = '/^(?!\.)(?!.*\.\.)[A-Za-z0-9!#$%&\'*+\/=?^_`{|}~.\-]{1,64}(?<!\.)@(?:[\p{L}\p{N}](?:[\p{L}\p{N}\-]{0,61}[\p{L}\p{N}])?\.)+(?:\p{L}{2,63}|xn--[a-z0-9\-]{1,59})$/iu';
 
     /** @var array<string,string> */
     private $fields = [];
@@ -92,17 +100,17 @@ final class LeadRequest
         } else {
             $normalized = self::normalizePhone($f['phone']);
             if ($normalized === null) {
-                $e['phone'] = "Укажите российский номер: +7{$nb}XXX{$nb}XXX-XX-XX или 8{$nb}XXX{$nb}XXX-XX-XX.";
+                $e['phone'] = "Укажите телефон: 10{$nb}цифр после +7 или{$nb}8.";
             } else {
                 $f['phone'] = $normalized;
             }
         }
 
         if ($f['email'] !== '') {
-            if (strlen($f['email']) > 254) {
+            if (Text::length($f['email']) > 254) {
                 $e['email'] = "Адрес e-mail слишком длинный{$nb}— не{$nb}больше 254{$nb}символов.";
-            } elseif (filter_var($f['email'], FILTER_VALIDATE_EMAIL) === false) {
-                $e['email'] = "Проверьте адрес e-mail{$nb}— в{$nb}нём должны быть «@» и{$nb}домен.";
+            } elseif (preg_match(self::EMAIL_PATTERN, $f['email']) !== 1) {
+                $e['email'] = "Проверьте адрес e-mail{$nb}— например, name@mail.ru.";
             }
         }
 
@@ -142,10 +150,10 @@ final class LeadRequest
         $this->errors = $e;
     }
 
-    /** +7XXXXXXXXXX или null, если номер не похож на российский. */
+    /** +7XXXXXXXXXX или null, если номер не похож на российский или в нём есть буквы. */
     public static function normalizePhone(string $phone): ?string
     {
-        if (strlen($phone) > 40) {
+        if (Text::length($phone) > 40 || preg_match(self::PHONE_CHARS, $phone) !== 1) {
             return null;
         }
         $digits = (string) preg_replace('/\D+/', '', $phone);

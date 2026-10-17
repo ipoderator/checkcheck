@@ -4,8 +4,9 @@
 
 Форма `#lead-form` (`public/index.html`) → `public/assets/js/lead-form.js` → `POST api/lead.php` → `LeadService::handle()` → каналы Telegram и e-mail → JSON-ответ → состояние формы.
 
-- `public/api/lead.php` — единственная точка входа бэкенда: берёт метод, Content-Type, IP, вызывает `LeadService::fromConfig(Config::load())->handle(...)`, печатает JSON. Непойманное исключение -> 500 `server_error`.
-- Порядок проверок в `LeadService`: метод -> ловушка и время -> валидация -> лимит по IP -> конфиг -> доставка. Валидация раньше «не настроено», чтобы посетитель сначала исправил поля.
+- `public/api/lead.php` — единственная точка входа бэкенда: берёт метод, Content-Type, IP, вызывает `LeadService::fromConfig(Config::load())->handle(...)`. С `application/json` в `Accept` печатает JSON (так шлёт скрипт формы), иначе — HTML-страницу с тем же итогом и ссылкой «Вернуться к форме» (`LeadPage::render()`, форма без JS). Непойманное исключение -> 500 `server_error`.
+- Порядок проверок в `LeadService`: метод -> ловушка и время -> валидация -> конфиг -> лимит по IP -> доставка. Валидация раньше «не настроено», чтобы посетитель сначала исправил поля; «не настроено» не расходует лимит, сбой доставки (502) расходует.
+- Правила полей (телефон: только цифры и знаки номера; e-mail: без `..`, домен с точкой, кириллица допустима; обрезка Unicode-пробелов) и тексты ошибок одинаковы в `LeadRequest.php` и `lead-form.js` (`PHONE_CHARS`, `EMAIL_PATTERN`); `tests/e2e/form.spec.mjs` сверяет клиент с сервером.
 - Коды ответов: 200 `ok` (в том числе притворный успех для бота), 400 `bad_request`, 405, 422 `validation` (+ `errors` по именам полей), 429 `rate_limited`, 503 `not_configured`, 502 `delivery_failed`, 500 `server_error`.
 - Доставка: каналы `TelegramChannel` и `MailChannel` (интерфейс `LeadChannel`: `name()`, `isConfigured()`, `send()` бросает `RuntimeException`). Успех — хотя бы один канал. Все настроенные упали -> заявка в `STORAGE_DIR/failed-leads.jsonl`, ответ 502.
 - Заявки больше нигде не хранятся (ADR 0003). Лимит: 5 заявок с IP за 600 с, файлы `STORAGE_DIR/ratelimit/*.json` (`RateLimiter`).
@@ -19,8 +20,9 @@
 - `main.js` владеет UI: меню, подсветка раздела, `[data-reveal]` -> `is-visible`, лента `[data-tape]`, параллакс героя. Формой не владеет.
 - `lead-form.js` владеет формой и не знает о UI-модуле. DOM-контракт: `[data-lead-form]`, вкладки `[data-lead-type]` (`price` | `partner`), поля только для price в `[data-only="price"]`, ошибки `[data-error-for]`, статус `[data-lead-status]`, состояния `data-state="idle|sending|success|error"`, кнопки формата `[data-lead-format]`.
 - Черновик формы — `localStorage` `vsecheki:lead-draft:v1`, всегда в try/catch.
-- Без JS форма уходит обычным POST; ответ тот же JSON.
+- Без JS форма уходит обычным POST; поле «Нужный размер» видно (прячет его скрипт), ответ — HTML-страница.
 - Изображения — `public/assets/img/*`, имена фиксированы; рендер `tools/render/` (Three.js + Playwright, затем Python-кодирование). Руками не править.
+- Адрес сайта — `site.config.json` (`siteUrl`); `tools/set-site-url.mjs` (`npm run set-site-url -- https://…`) проставляет canonical, `og:url`/`og:image`, JSON-LD, `Sitemap:` в robots.txt и пишет `sitemap.xml`. Места для canonical в страницах помечены комментарием `site-url`. Пустой адрес: без canonical, `og:url` и `sitemap.xml`, картинки корневыми путями.
 
 ## Принятые соглашения
 

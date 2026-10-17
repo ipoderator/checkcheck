@@ -8,7 +8,8 @@
     "test": "node tests/helpers/php-lint.mjs && node tools/check-secrets.mjs && node --test \"tests/api/*.test.mjs\" && playwright test --pass-with-no-tests",
     "test:api": "node --test \"tests/api/*.test.mjs\"",
     "test:e2e": "playwright test",
-    "images": "node tools/render/render.mjs"
+    "images": "node tools/render/render.mjs",
+    "set-site-url": "node tools/set-site-url.mjs"
   },
   "engines": {
     "node": ">=18"

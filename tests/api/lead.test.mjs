@@ -8,6 +8,9 @@ import { startPhpServer, postLead, validLead } from '../helpers/php-server.mjs';
 const JSON_TYPE = 'application/json; charset=utf-8';
 const FAKE_TOKEN = ['fake', 'token'].join('-');
 const OWNER = ['owner', 'example.test'].join('@');
+const FAKE_CHAT = ['-100', '1'].join('');
+// Порт 9 (discard) на loopback: соединение отклоняется, настоящий Telegram не участвует.
+const DEAD_TELEGRAM = ['http://127.0.0.1', '9'].join(':');
 
 describe('метод и тип тела', () => {
   let srv;
@@ -34,11 +37,63 @@ describe('метод и тип тела', () => {
     assert.deepEqual(res.body, { ok: false, code: 'bad_request' });
   });
 
-  test('без Accept: application/json ответ тот же JSON', async () => {
-    const res = await postLead(srv.baseUrl, validLead({ phone: '' }), { headers: { Accept: 'text/html' } });
+  test('Accept: application/json, */* — JSON-контракт для скрипта формы прежний', async () => {
+    const res = await postLead(srv.baseUrl, validLead({ phone: '' }), { headers: { Accept: 'application/json, text/plain, */*' } });
     assert.equal(res.status, 422);
     assert.equal(res.headers.get('content-type'), JSON_TYPE);
     assert.equal(res.body.code, 'validation');
+  });
+});
+
+describe('форма без JS: ответ — страница для человека, а не JSON', () => {
+  let srv;
+  before(async () => { srv = await startPhpServer(); });
+  after(() => srv.stop());
+
+  const HTML_TYPE = 'text/html; charset=utf-8';
+  function assertPage(res) {
+    assert.equal(res.headers.get('content-type'), HTML_TYPE);
+    assert.match(res.text, /^<!doctype html>/i);
+    assert.match(res.text, /<html lang="ru">/);
+    assert.match(res.text, /<a[^>]+href="[^"]*#order"[^>]*>Вернуться к(?:&nbsp;|\s)форме<\/a>/);
+    assert.equal(res.body, undefined, 'тело не JSON');
+  }
+
+  test('ошибки полей (браузер шлёт Accept: text/html) → 422 и список ошибок по-русски, ввод экранирован', async () => {
+    const res = await postLead(srv.baseUrl, validLead({ phone: '', name: '<script>x</script>', format: 'other', format_custom: '' }),
+      { headers: { Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' } });
+    assert.equal(res.status, 422);
+    assertPage(res);
+    assert.match(res.text, /Заявка не(?:&nbsp;|\s)отправлена/);
+    assert.match(res.text, /Телефон/);
+    assert.match(res.text, /Укажите телефон\./);
+    assert.match(res.text, /Нужный размер/);
+    assert.doesNotMatch(res.text, /<script>x<\/script>/);
+  });
+
+  test('без заголовка Accept и без каналов → 503 страница «форма пока не подключена» с телефоном', async () => {
+    const res = await postLead(srv.baseUrl, validLead({ form_elapsed_ms: undefined }), { headers: { Accept: '' } });
+    assert.equal(res.status, 503);
+    assertPage(res);
+    assert.match(res.text, /Форма пока не(?:&nbsp;|\s)подключена/);
+    assert.match(res.text, /tel:\+79202431957/);
+  });
+
+  test('принятая заявка → 200 страница «Заявка принята»', async () => {
+    const mailSrv = await startPhpServer({ env: { LEAD_EMAIL_TO: OWNER } });
+    try {
+      const res = await postLead(mailSrv.baseUrl, validLead({ form_elapsed_ms: undefined }), { headers: { Accept: 'text/html' } });
+      assert.equal(res.status, 200);
+      assertPage(res);
+      assert.match(res.text, /Заявка принята/);
+      assert.equal(mailSrv.outbox().length, 1);
+    } finally { await mailSrv.stop(); }
+  });
+
+  test('GET без Accept: application/json → 405 страница', async () => {
+    const res = await postLead(srv.baseUrl, undefined, { method: 'GET', headers: { Accept: 'text/html' } });
+    assert.equal(res.status, 405);
+    assertPage(res);
   });
 });
 
@@ -87,6 +142,33 @@ describe('валидация полей → 422', () => {
   test('phone: 11 цифр, но первая не 7/8 — ошибка; 10 цифр не с 9 — ошибка', async () => {
     assertRussian((await errorsFor({ phone: '59202431957' })).phone);
     assertRussian((await errorsFor({ phone: '4952431957' })).phone);
+  });
+
+  const NB = '\u00A0';
+  const PHONE_INVALID = `Укажите телефон: 10${NB}цифр после +7 или${NB}8.`;
+  const EMAIL_INVALID = `Проверьте адрес e-mail${NB}— например, name@mail.ru.`;
+
+  test('phone с буквами — та же ошибка, что для неверного номера (как в форме)', async () => {
+    assert.equal((await errorsFor({ phone: '+7 920 000-00-00 звонить после обеда' })).phone, PHONE_INVALID);
+    assert.equal((await errorsFor({ phone: '8 920 ABC 00 00 0' })).phone, PHONE_INVALID);
+    assert.equal((await errorsFor({ phone: '12345' })).phone, PHONE_INVALID);
+    assert.equal((await errorsFor({ phone: '+7 (920) 000-00-00', name: '' })).phone, undefined);
+  });
+
+  test('email: «a..b@mail.ru», без точки в домене — ошибка с одним текстом; кириллический домен допустим', async () => {
+    for (const bad of ['a..b@mail.ru', 'ivan@mail', '.ivan@mail.ru', 'ivan.@mail.ru', 'ivan@mail..ru', 'ivan@-mail.ru', 'ivan @mail.ru']) {
+      assert.equal((await errorsFor({ email: bad, name: '' })).email, EMAIL_INVALID, bad);
+    }
+    for (const good of ['ivan@почта.рф', 'ivan@xn--80a1acny.xn--p1ai', 'i.van+shop@mail.ru', 'IVAN@Mail.Ru']) {
+      assert.equal((await errorsFor({ email: good, name: '' })).email, undefined, good);
+    }
+  });
+
+  test('name из неразрывных и других Unicode-пробелов — «Укажите имя.»; по краям такие пробелы обрезаются', async () => {
+    for (const blank of ['\u00A0\u00A0', '\u2003\u3000', ' \u202F\uFEFF ']) {
+      assert.equal((await errorsFor({ name: blank, phone: '' })).name, 'Укажите имя.', JSON.stringify(blank));
+    }
+    assert.match((await errorsFor({ name: '\u00A0Я\u00A0', phone: '' })).name, /слишком короткое/);
   });
 
   test('email: неверный формат и длиннее 254 — ошибка', async () => {
@@ -246,29 +328,52 @@ describe('не настроено → 503', () => {
 
 describe('лимит частоты', () => {
   test('шестая корректная заявка с одного IP за 600 с → 429 rate_limited', async () => {
-    const srv = await startPhpServer();
+    const srv = await startPhpServer({ env: { LEAD_EMAIL_TO: OWNER } });
     try {
       for (let i = 1; i <= 5; i += 1) {
         const res = await postLead(srv.baseUrl, validLead());
-        assert.equal(res.status, 503, `заявка ${i}`);
+        assert.equal(res.status, 200, `заявка ${i}: ${res.text}`);
       }
       const sixth = await postLead(srv.baseUrl, validLead());
       assert.equal(sixth.status, 429);
       assert.deepEqual(sixth.body, { ok: false, code: 'rate_limited' });
+      assert.equal(srv.outbox().length, 5);
+    } finally { await srv.stop(); }
+  });
+
+  test('«не настроено» (503) не расходует лимит: конфиг проверяется раньше лимита', async () => {
+    const srv = await startPhpServer();
+    try {
+      for (let i = 1; i <= 7; i += 1) {
+        const res = await postLead(srv.baseUrl, validLead());
+        assert.equal(res.status, 503, `заявка ${i}`);
+      }
+      assert.equal(existsSync(join(srv.storageDir, 'ratelimit')) ? readdirSync(join(srv.storageDir, 'ratelimit')).length : 0, 0);
+    } finally { await srv.stop(); }
+  });
+
+  test('сбой доставки (502) по-прежнему расходует лимит', async () => {
+    const srv = await startPhpServer({ env: { TELEGRAM_BOT_TOKEN: FAKE_TOKEN, TELEGRAM_CHAT_ID: FAKE_CHAT, TELEGRAM_API_BASE: DEAD_TELEGRAM } });
+    try {
+      for (let i = 1; i <= 5; i += 1) {
+        const res = await postLead(srv.baseUrl, validLead());
+        assert.equal(res.status, 502, `заявка ${i}: ${res.text}`);
+      }
+      assert.equal((await postLead(srv.baseUrl, validLead())).status, 429);
     } finally { await srv.stop(); }
   });
 
   test('ошибки валидации не расходуют лимит', async () => {
-    const srv = await startPhpServer();
+    const srv = await startPhpServer({ env: { LEAD_EMAIL_TO: OWNER } });
     try {
       for (let i = 0; i < 6; i += 1) await postLead(srv.baseUrl, validLead({ phone: '1' }));
       const res = await postLead(srv.baseUrl, validLead());
-      assert.equal(res.status, 503);
+      assert.equal(res.status, 200, res.text);
     } finally { await srv.stop(); }
   });
 
   test('файлы лимита старше часа удаляются, свежие остаются', async () => {
-    const srv = await startPhpServer();
+    const srv = await startPhpServer({ env: { LEAD_EMAIL_TO: OWNER } });
     try {
       const dir = join(srv.storageDir, 'ratelimit');
       mkdirSync(dir, { recursive: true });

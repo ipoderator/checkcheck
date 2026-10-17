@@ -67,12 +67,22 @@ final class Text
         return is_array($chars) ? $chars : str_split($value);
     }
 
+    /**
+     * Обрезка краёв как у String.prototype.trim() в браузере: ASCII-пробелы, неразрывный
+     * и прочие Unicode-пробелы (\p{Z}), U+FEFF. Иначе имя из двух U+00A0 прошло бы проверку.
+     */
+    public static function trim(string $value): string
+    {
+        $trimmed = preg_replace('/^[\s\p{Z}\x{FEFF}]+|[\s\p{Z}\x{FEFF}]+$/u', '', $value);
+        return $trimmed === null ? trim($value) : $trimmed;
+    }
+
     /** Однострочное значение: управляющие символы и переводы строк → пробел, края обрезаны. */
     public static function line(string $value): string
     {
         $value = self::utf8($value);
         $value = (string) preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $value);
-        return trim($value);
+        return self::trim($value);
     }
 
     /** Многострочный текст: переводы строк сохраняются как \n, прочие управляющие символы удаляются. */
@@ -81,6 +91,6 @@ final class Text
         $value = self::utf8($value);
         $value = str_replace(["\r\n", "\r"], "\n", $value);
         $value = (string) preg_replace('/[\x00-\x08\x0B-\x1F\x7F]/u', '', $value);
-        return trim($value);
+        return self::trim($value);
     }
 }

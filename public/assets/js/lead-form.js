@@ -15,21 +15,31 @@ const DRAFT_FIELDS = ['type', 'name', 'phone', 'email', 'company', 'region', 'fo
 const PRICE_ONLY = ['format', 'format_custom', 'quantity'];
 const FORMAT_LABELS = { '57x40': `57${NB}×${NB}40`, '80x80': `80${NB}×${NB}80`, other: 'другой размер' };
 
+// Тексты ответа. saved — в форме есть введённое: только тогда пишем, что оно сохранено.
 const MESSAGES = {
-  sending: 'Отправляем заявку…',
-  success: `<strong>Заявка принята.</strong> Мы${NB}свяжемся с${NB}вами. Если срочно${NB}— звоните ${PHONE_HTML}.`,
-  invalid: `<strong>Проверьте поля, отмеченные красным.</strong> Введённое сохранено${NB}— исправьте и${NB}отправьте ещё раз.`,
-  not_configured: `<strong>Форма пока не${NB}подключена${NB}— заявка не${NB}отправлена.</strong> Ваши данные сохранены на${NB}странице. Позвоните ${PHONE_HTML} или напишите на${NB}${EMAIL_HTML}.`,
-  delivery_failed: `<strong>Не${NB}удалось доставить заявку.</strong> Ваши данные сохранены${NB}— попробуйте отправить ещё раз или позвоните ${PHONE_HTML}.`,
-  rate_limited: `<strong>Слишком много заявок подряд.</strong> Подождите 10${NB}минут и${NB}отправьте снова или позвоните ${PHONE_HTML}. Введённое сохранено.`,
-  network: `<strong>Нет связи с${NB}сервером${NB}— заявка не${NB}отправлена.</strong> Проверьте интернет и${NB}нажмите «Отправить заявку» ещё раз. Введённое сохранено. Телефон для связи: ${PHONE_HTML}.`,
+  sending: () => 'Отправляем заявку…',
+  success: () => `<strong>Заявка принята.</strong> Мы${NB}свяжемся с${NB}вами. Если срочно${NB}— звоните ${PHONE_HTML}.`,
+  invalid: (saved) => `<strong>Проверьте поля, отмеченные красным.</strong>${saved ? ` Введённое сохранено${NB}— исправьте и${NB}отправьте ещё раз.` : ''}`,
+  not_configured: (saved) => `<strong>Форма пока не${NB}подключена${NB}— заявка не${NB}отправлена.</strong>${saved ? ` Ваши данные сохранены на${NB}странице.` : ''} Позвоните ${PHONE_HTML} или напишите на${NB}${EMAIL_HTML}.`,
+  delivery_failed: (saved) => `<strong>Не${NB}удалось доставить заявку.</strong> ${saved ? `Ваши данные сохранены${NB}— попробуйте` : 'Попробуйте'} отправить ещё раз или позвоните ${PHONE_HTML}.`,
+  rate_limited: (saved) => `<strong>Слишком много заявок подряд.</strong> Подождите 10${NB}минут и${NB}отправьте снова или позвоните ${PHONE_HTML}.${saved ? ' Введённое сохранено.' : ''}`,
+  network: (saved) => `<strong>Нет связи с${NB}сервером${NB}— заявка не${NB}отправлена.</strong> Проверьте интернет и${NB}нажмите «Отправить заявку» ещё раз.${saved ? ' Введённое сохранено.' : ''} Телефон для связи: ${PHONE_HTML}.`,
+  // Запрос оборван по таймеру: сервер мог заявку принять, поэтому не пишем «не отправлена».
+  timeout: (saved) => `<strong>Сервер не${NB}ответил вовремя.</strong> Заявка могла дойти, а${NB}могла и${NB}нет. Чтобы не${NB}отправить её дважды, позвоните ${PHONE_HTML}.${saved ? ' Введённое сохранено.' : ''}`,
 };
+
+// Правила полей — те же, что в public/app/LeadRequest.php (PHONE_CHARS, EMAIL_PATTERN):
+// при правке менять в обоих местах; tests/e2e/form.spec.mjs сверяет клиент и сервер.
+const PHONE_CHARS = /^[0-9+().\- \u00A0\u2009\u202F\u2010-\u2015]*$/u;
+const EMAIL_PATTERN = /^(?!\.)(?!.*\.\.)[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]{1,64}(?<!\.)@(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?\.)+(?:\p{L}{2,63}|xn--[a-z0-9-]{1,59})$/iu;
+const PHONE_INVALID = `Укажите телефон: 10${NB}цифр после +7 или${NB}8.`;
+const EMAIL_INVALID = `Проверьте адрес e-mail${NB}— например, name@mail.ru.`;
 
 const textLength = (value) => [...value].length;
 
-/** +7XXXXXXXXXX или null — те же правила, что у сервера. */
+/** +7XXXXXXXXXX или null — те же правила, что у сервера: буквы и прочие знаки — не телефон. */
 export function normalizePhone(phone) {
-  if (phone.length > 40) return null;
+  if (textLength(phone) > 40 || !PHONE_CHARS.test(phone)) return null;
   const digits = phone.replace(/\D+/g, '');
   if (digits.length === 11 && (digits[0] === '7' || digits[0] === '8')) return `+7${digits.slice(1)}`;
   if (digits.length === 10 && digits[0] === '9') return `+7${digits}`;
@@ -47,12 +57,12 @@ export function validate(values) {
 
   const phone = values.phone.trim();
   if (phone === '') errors.phone = 'Укажите телефон.';
-  else if (!normalizePhone(phone)) errors.phone = `Укажите российский номер: +7${NB}XXX${NB}XXX-XX-XX или 8${NB}XXX${NB}XXX-XX-XX.`;
+  else if (!normalizePhone(phone)) errors.phone = PHONE_INVALID;
 
   const email = values.email.trim();
   if (email !== '') {
-    if (email.length > 254) errors.email = `Адрес e-mail слишком длинный${NB}— не${NB}больше 254${NB}символов.`;
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = `Проверьте адрес e-mail${NB}— в${NB}нём должны быть «@» и${NB}домен.`;
+    if (textLength(email) > 254) errors.email = `Адрес e-mail слишком длинный${NB}— не${NB}больше 254${NB}символов.`;
+    else if (!EMAIL_PATTERN.test(email)) errors.email = EMAIL_INVALID;
   }
   if (textLength(values.company.trim()) > 150) errors.company = `Название компании${NB}— не${NB}больше 150${NB}символов.`;
   if (textLength(values.region.trim()) > 150) errors.region = `Регион${NB}— не${NB}больше 150${NB}символов.`;
@@ -95,7 +105,10 @@ function initLeadForm(form) {
   const successTitle = form.querySelector('[data-lead-success-title]');
   const customWrap = form.querySelector('[data-format-custom]');
   const summary = Object.fromEntries([...form.querySelectorAll('[data-summary]')].map((el) => [el.dataset.summary, el]));
+  const clear = form.querySelector('[data-lead-clear]');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  // Статус получает фокус после ошибки отправки: иначе фокус с заблокированной кнопки уходит на body.
+  status.setAttribute('tabindex', '-1');
   let busy = false;
   let attempted = false;
   let saveTimer = 0;
@@ -131,14 +144,19 @@ function initLeadForm(form) {
   }
 
   /* ----- черновик ----- */
+  /** В форме есть что-то введённое (кроме вкладки). */
+  function hasData() {
+    const current = values();
+    return DRAFT_FIELDS.some((key) => key !== 'type' && String(current[key]).trim() !== '');
+  }
+
   function saveDraft() {
     clearTimeout(saveTimer);
     saveTimer = 0;
     const current = values();
     const data = {};
     for (const key of DRAFT_FIELDS) data[key] = current[key];
-    const empty = DRAFT_FIELDS.every((key) => key === 'type' || !data[key]);
-    if (empty) storage.clear();
+    if (!hasData()) storage.clear();
     else storage.write(data);
   }
   function scheduleSave() {
@@ -225,10 +243,10 @@ function initLeadForm(form) {
     }
     const first = FIELD_ORDER.find((name) => errors[name] && controlsFor(name).length && !controlsFor(name)[0].closest('[hidden]'));
     if (first) {
-      const control = name => controlsFor(name).find((el) => el.checked) || controlsFor(name)[0];
+      const control = (name) => controlsFor(name).find((el) => el.checked) || controlsFor(name)[0];
       control(first).focus();
     }
-    return orphan;
+    return { orphan, focused: !!first };
   }
 
   /* ----- состояние и статус ----- */
@@ -247,6 +265,9 @@ function initLeadForm(form) {
   function setBusy(value) {
     busy = value;
     submit.disabled = value;
+    // Пока заявка в пути, нельзя очистить форму или сменить вкладку: ответ относится к тому, что ушло.
+    clear.disabled = value;
+    tabs.forEach((tab) => { tab.disabled = value; });
     submit.textContent = value ? 'Отправляем…' : submitLabel;
     form.setAttribute('aria-busy', String(value));
   }
@@ -258,16 +279,22 @@ function initLeadForm(form) {
   }
 
   /* ----- отправка ----- */
-  async function send() {
+  /** Поля заявки — снимок на момент нажатия «Отправить». */
+  function payload() {
     const v = values();
     const data = new FormData(form);
     if (v.type !== 'price') PRICE_ONLY.forEach((name) => data.delete(name));
     else if (v.format !== 'other') data.delete('format_custom');
     data.set('page', window.location.pathname || '/');
+    return data;
+  }
+
+  async function send(data) {
     data.set('form_elapsed_ms', String(Math.round(performance.now() - readyAt)));
 
     const controller = 'AbortController' in window ? new AbortController() : null;
-    const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : 0;
+    let timedOut = false;
+    const timer = controller ? setTimeout(() => { timedOut = true; controller.abort(); }, REQUEST_TIMEOUT_MS) : 0;
     try {
       const response = await fetch(form.action, {
         method: 'POST',
@@ -280,14 +307,14 @@ function initLeadForm(form) {
       try { body = await response.json(); } catch (e) { body = null; }
       return { status: response.status, body };
     } catch (e) {
-      return { status: 0, body: null };
+      return { status: 0, body: null, timedOut };
     } finally {
       clearTimeout(timer);
     }
   }
 
   function codeFor(result) {
-    if (result.status === 0) return 'network';
+    if (result.status === 0) return result.timedOut ? 'timeout' : 'network';
     if (result.body && result.body.ok === true && result.status >= 200 && result.status < 300) return 'ok';
     if (result.body && typeof result.body.code === 'string') return result.body.code;
     if (result.status === 429) return 'rate_limited';
@@ -304,18 +331,19 @@ function initLeadForm(form) {
     const errors = validate(values());
     if (Object.keys(errors).length) {
       setBusy(false);
-      setState('error', MESSAGES.invalid);
+      setState('error', MESSAGES.invalid(hasData()));
       applyErrors(errors);
       return;
     }
     applyErrors({});
     saveDraft();
-    setState('sending', MESSAGES.sending);
+    setState('sending', MESSAGES.sending());
+    const data = payload();
 
     const elapsed = performance.now() - readyAt;
     if (elapsed < MIN_FILL_MS) await sleep(MIN_FILL_MS - elapsed + 50);
 
-    const result = await send();
+    const result = await send(data);
     const code = codeFor(result);
     setBusy(false);
 
@@ -324,18 +352,20 @@ function initLeadForm(form) {
       storage.clear();
       setType('price');
       success.hidden = false;
-      setState('success', MESSAGES.success);
+      setState('success', MESSAGES.success());
       form.scrollIntoView({ block: 'start', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
       successTitle.focus({ preventScroll: true });
       return;
     }
     if (code === 'validation') {
-      const orphan = applyErrors((result.body && result.body.errors) || {});
-      setState('error', MESSAGES.invalid, orphan);
+      const { orphan, focused } = applyErrors((result.body && result.body.errors) || {});
+      setState('error', MESSAGES.invalid(hasData()), orphan);
+      if (!focused) status.focus();
       return;
     }
     const message = MESSAGES[code] || MESSAGES.delivery_failed;
-    setState('error', message);
+    setState('error', message(hasData()));
+    status.focus();
   }
 
   /* ----- события ----- */
@@ -374,7 +404,8 @@ function initLeadForm(form) {
     });
   });
 
-  form.querySelector('[data-lead-clear]').addEventListener('click', () => {
+  clear.addEventListener('click', () => {
+    if (busy) return;
     const type = typeInput.value;
     resetFields();
     storage.clear();

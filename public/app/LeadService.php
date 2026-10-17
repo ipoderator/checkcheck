@@ -6,7 +6,8 @@ if (!defined('VSECHEKI_APP')) {
 
 /**
  * Вся логика контракта POST /api/lead.php.
- * Порядок проверок: метод → ловушка/время → валидация → лимит → конфиг → доставка.
+ * Порядок проверок: метод → ловушка/время → валидация → конфиг → лимит → доставка.
+ * «Не настроено» не расходует лимит: посетитель, который повторяет попытку, не получает 429.
  * В лог ошибок пишутся только канал и текст ошибки, без персональных данных.
  */
 final class LeadService
@@ -66,10 +67,6 @@ final class LeadService
             return ['status' => 422, 'body' => ['ok' => false, 'code' => 'validation', 'errors' => $errors]];
         }
 
-        if (!$this->limiter->hit($ip, time())) {
-            return self::fail(429, 'rate_limited');
-        }
-
         $configured = [];
         foreach ($this->channels as $channel) {
             if ($channel->isConfigured()) {
@@ -79,6 +76,9 @@ final class LeadService
         if (!$configured) {
             error_log('lead: не настроен ни один канал доставки (Telegram, e-mail) — заявка не принята');
             return self::fail(503, 'not_configured');
+        }
+        if (!$this->limiter->hit($ip, time())) {
+            return self::fail(429, 'rate_limited');
         }
         foreach ($this->channels as $channel) {
             if (!$channel->isConfigured()) {

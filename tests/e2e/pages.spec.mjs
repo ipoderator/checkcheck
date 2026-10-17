@@ -23,9 +23,12 @@ test('мета-теги, Open Graph и JSON-LD Organization только из р
   await page.goto('/');
   await expect(page).toHaveTitle(/ВсеЧеки/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /кассов/i);
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://ДОМЕН/');
-  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', 'https://ДОМЕН/');
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://ДОМЕН/assets/img/og-image.png');
+  // Адрес сайта не задан (site.config.json): canonical и og:url нет, картинка — корневой путь.
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+  await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', '/assets/img/og-image.png');
+  expect(await page.content()).not.toContain('ДОМЕН');
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /Собственное производство/);
   const ld = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
   expect(ld['@type']).toBe('Organization');
   expect(ld.name).toBe('ВсеЧеки');
@@ -98,11 +101,9 @@ test('404.html: оборванная лента и ссылка на главн�
   await expect(page.locator('h1')).toContainText('Кассовая лента');
 });
 
-test('robots.txt и sitemap.xml с заглушкой домена', async ({ request }) => {
+test('robots.txt без заглушки домена; Sitemap появляется только с адресом сайта', async ({ request }) => {
   const robots = await (await request.get('/robots.txt')).text();
-  expect(robots).toContain('Sitemap: https://ДОМЕН/sitemap.xml');
+  expect(robots).not.toContain('ДОМЕН');
+  expect(robots).not.toMatch(/^Sitemap:/m);
   expect(robots).toMatch(/Disallow: \/api\//);
-  const sitemap = await (await request.get('/sitemap.xml')).text();
-  expect(sitemap).toContain('<loc>https://ДОМЕН/</loc>');
-  expect(sitemap).toContain('<loc>https://ДОМЕН/privacy.html</loc>');
 });

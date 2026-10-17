@@ -1,8 +1,6 @@
-# ДОМЕН: замените https://ДОМЕН на адрес сайта после покупки домена (см. README).
+# Строку Sitemap добавляет npm run set-site-url, когда задан адрес сайта (см. README).
 User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /app/
 Disallow: /storage/
-
-Sitemap: https://ДОМЕН/sitemap.xml
