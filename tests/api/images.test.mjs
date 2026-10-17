@@ -3,7 +3,7 @@
 // Перегенерировать: npm run images.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import { join } from 'node:path';
 import { ROOT } from '../helpers/php-server.mjs';
@@ -11,6 +11,10 @@ import { ROOT } from '../helpers/php-server.mjs';
 const PUBLIC = join(ROOT, 'public');
 const IMG = join(PUBLIC, 'assets', 'img');
 const KB = 1000;
+// Фон тёмных секций сайта: края картинки «Производства» сходят ровно в него.
+const DARK = [0x14, 0x15, 0x17];
+// Предел для PNG-запасных: квантование палитры (вторая задача, ист. 66).
+const PNG_MAX_BYTES = 400 * KB;
 
 // [файл, ширина, высота, прозрачный фон, предел веса в байтах]
 const RASTERS = [
@@ -20,8 +24,8 @@ const RASTERS = [
   ['roll-57x40.png', 1000, 1000, true],
   ['roll-80x80.webp', 1000, 1000, true, 120 * KB],
   ['roll-80x80.png', 1000, 1000, true],
-  ['rolls-stack.webp', 1600, 1000, false],
-  ['rolls-stack.png', 1600, 1000, false],
+  ['production-roll.webp', 1600, 1200, false, 250 * KB],
+  ['production-roll.png', 1600, 1200, false],
   ['og-image.png', 1200, 630, false],
   ['apple-touch-icon.png', 180, 180, false],
 ];
@@ -52,22 +56,65 @@ function probe(buf) {
   return { format: 'unknown' };
 }
 
-/** Альфа левого верхнего пикселя RGBA-PNG (8 бит): первая строка не зависит от предыдущей. */
-function pngCornerAlpha(buf) {
-  assert.equal(buf[24], 8, 'ожидалась глубина 8 бит');
-  assert.equal(buf[25], 6, 'ожидался RGBA-PNG');
-  const idat = [];
+/**
+ * Декодер PNG (8 бит, без чересстрочности): RGB, RGBA, палитра с tRNS, серый.
+ * Возвращает { width, height, pixel(x, y) → [r, g, b, a] }.
+ */
+function decodePng(buf) {
   let off = 8;
+  let ihdr = null, palette = null, trns = null;
+  const idat = [];
   while (off < buf.length) {
     const len = buf.readUInt32BE(off);
     const type = buf.subarray(off + 4, off + 8).toString('latin1');
-    if (type === 'IDAT') idat.push(buf.subarray(off + 8, off + 8 + len));
+    const data = buf.subarray(off + 8, off + 8 + len);
+    if (type === 'IHDR') ihdr = { width: data.readUInt32BE(0), height: data.readUInt32BE(4), depth: data[8], colorType: data[9], interlace: data[12] };
+    else if (type === 'PLTE') palette = data;
+    else if (type === 'tRNS') trns = data;
+    else if (type === 'IDAT') idat.push(data);
     off += 12 + len;
   }
+  assert.ok(ihdr, 'нет IHDR');
+  assert.equal(ihdr.depth, 8, 'ожидалась глубина 8 бит');
+  assert.equal(ihdr.interlace, 0, 'чересстрочный PNG не ожидался');
+  const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[ihdr.colorType];
+  assert.ok(channels, `неизвестный тип цвета ${ihdr.colorType}`);
+  const { width, height } = ihdr;
+  const stride = width * channels;
   const raw = inflateSync(Buffer.concat(idat));
-  // Фильтры None/Sub/Up/Average/Paeth для первого пикселя первой строки сводятся к самому байту
-  // (слева и сверху — нули), кроме Average: там prev/2 = 0 — тоже сам байт.
-  return raw[1 + 3];
+  const px = Buffer.alloc(stride * height);
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)];
+    const line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
+    for (let i = 0; i < stride; i++) {
+      const a = i >= channels ? px[y * stride + i - channels] : 0;
+      const b = y > 0 ? px[(y - 1) * stride + i] : 0;
+      const c = i >= channels && y > 0 ? px[(y - 1) * stride + i - channels] : 0;
+      let v = line[i];
+      if (filter === 1) v += a;
+      else if (filter === 2) v += b;
+      else if (filter === 3) v += (a + b) >> 1;
+      else if (filter === 4) {
+        const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
+        v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      }
+      px[y * stride + i] = v & 0xff;
+    }
+  }
+  const pixel = (x, y) => {
+    const i = y * stride + x * channels;
+    switch (ihdr.colorType) {
+      case 0: return [px[i], px[i], px[i], 255];
+      case 2: return [px[i], px[i + 1], px[i + 2], 255];
+      case 4: return [px[i], px[i], px[i], px[i + 1]];
+      case 6: return [px[i], px[i + 1], px[i + 2], px[i + 3]];
+      default: {
+        const k = px[i];
+        return [palette[k * 3], palette[k * 3 + 1], palette[k * 3 + 2], trns && k < trns.length ? trns[k] : 255];
+      }
+    }
+  };
+  return { width, height, pixel };
 }
 
 describe('изображения из таблицы interfaces.md', () => {
@@ -82,7 +129,7 @@ describe('изображения из таблицы interfaces.md', () => {
       if (maxBytes) assert.ok(statSync(file).size <= maxBytes, `${name}: ${statSync(file).size} байт > ${maxBytes}`);
       if (transparent) {
         assert.ok(info.alpha, 'нет альфа-канала');
-        if (info.format === 'png') assert.equal(pngCornerAlpha(buf), 0, 'угол картинки не прозрачный');
+        if (info.format === 'png') assert.equal(decodePng(buf).pixel(0, 0)[3], 0, 'угол картинки не прозрачный');
       }
     });
   }
@@ -99,6 +146,48 @@ describe('изображения из таблицы interfaces.md', () => {
       for (const c of colors) assert.ok(PALETTE.includes(c), `цвет ${c} не из палитры`);
     });
   }
+
+  test('каждый PNG в public/assets/img не тяжелее 400 КБ', () => {
+    const pngs = readdirSync(IMG).filter((f) => f.endsWith('.png'));
+    assert.ok(pngs.length >= 6, `PNG мало: ${pngs.join(', ')}`);
+    for (const f of pngs) {
+      const size = statSync(join(IMG, f)).size;
+      assert.ok(size <= PNG_MAX_BYTES, `${f}: ${Math.round(size / KB)} КБ > 400 КБ`);
+    }
+  });
+
+  test('production-roll.png: непрозрачная, края кадра — ровно фон секции #141517', () => {
+    const png = decodePng(readFileSync(join(IMG, 'production-roll.png')));
+    const { width, height } = png;
+    const bad = [];
+    const check = (x, y) => {
+      const [r, g, b, a] = png.pixel(x, y);
+      if (a !== 255 || r !== DARK[0] || g !== DARK[1] || b !== DARK[2]) bad.push(`(${x}, ${y}) = ${r},${g},${b},${a}`);
+    };
+    for (let d = 0; d < 3; d++) {
+      for (let x = 0; x < width; x++) { check(x, d); check(x, height - 1 - d); }
+      for (let y = 0; y < height; y++) { check(d, y); check(width - 1 - d, y); }
+    }
+    assert.deepEqual(bad.slice(0, 5), [], `на краях ${bad.length} пикселей не #141517`);
+    // В середине — предмет, а не пустой фон.
+    let light = 0;
+    for (let y = height * 0.3; y < height * 0.7; y += 4) {
+      for (let x = width * 0.3; x < width * 0.7; x += 4) {
+        const [r, g, b] = png.pixel(Math.round(x), Math.round(y));
+        if (r + g + b > 600) light++;
+      }
+    }
+    assert.ok(light > 500, `в центре кадра почти нет светлой бумаги (${light})`);
+  });
+
+  test('стопки рулонов больше нет: ни файлов, ни кадра в рендере', () => {
+    const left = readdirSync(IMG).filter((f) => f.startsWith('rolls-stack'));
+    assert.deepEqual(left, []);
+    for (const rel of ['tools/render/render.mjs', 'tools/render/scene/shots.js']) {
+      const src = readFileSync(join(ROOT, rel), 'utf8');
+      assert.ok(!/rolls-stack|stackShot|\bstack\b/.test(src), `${rel} ещё рендерит стопку`);
+    }
+  });
 
   test('светлый и тёмный варианты логотипа различаются', () => {
     const dark = readFileSync(join(PUBLIC, 'assets/brand/logo.svg'), 'utf8');

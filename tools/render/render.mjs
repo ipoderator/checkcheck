@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Рендер изображений сайта: `npm run images`.
 // Three.js из node_modules/three в headless Chromium (Playwright) → PNG с прозрачным фоном →
-// Pillow (python3) → WebP под бюджет веса + PNG в public/assets/img/.
+// Pillow (python3) → WebP под бюджет веса + PNG в public/assets/img/ → PNG-запасные квантуются
+// в палитру (quantize.mjs), чтобы каждый был не тяжелее 400 КБ.
 // Плюс словесный знак, favicon, apple-touch-icon и OG-картинка (brand.mjs, og.html).
 //
 // Флаги: --only hero,roll-57x40,… — только эти файлы; --raw <папка> — сохранить и сырые кадры.
@@ -12,12 +13,15 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeBrand, faviconSvg } from './brand.mjs';
+import { quantizeFile } from './quantize.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..', '..');
 const PUBLIC = join(ROOT, 'public');
 const IMG = join(PUBLIC, 'assets', 'img');
 const ORIGIN = 'http://render.local';
+// Предел для PNG-запасных (тест — 400 КБ; запас на разброс рендера).
+const PNG_MAX_BYTES = 390_000;
 
 const MIME = { '.js': 'text/javascript', '.html': 'text/html', '.ttf': 'font/ttf', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css' };
 
@@ -77,19 +81,20 @@ async function main() {
   try {
     if (want('hero-roll')) {
       const img = await shot(browser, 'hero', { size: 1600, supersample: 2 });
-      jobs.push({ src: saveRaw('hero-roll', dataUrlToBuffer(img)), out: join(IMG, 'hero-roll'), size: [1600, 1600], formats: ['webp', 'png'], webp_max_bytes: 245_000 });
+      jobs.push({ src: saveRaw('hero-roll', dataUrlToBuffer(img)), out: join(IMG, 'hero-roll'), size: [1600, 1600], formats: ['webp', 'png'], webp_max_bytes: 245_000, png_max_bytes: PNG_MAX_BYTES });
     }
     // Карточки форматов — почти в одном масштабе: 80 × 80 заметно шире и толще 57 × 40
     // (57 × 40 снят чуть ближе, иначе на карточке он теряется).
     if (want('roll-80x80') || want('roll-57x40')) {
       const big = await shot(browser, 'roll', { width: 80, diameter: 80, size: 1000, supersample: 2 });
       const small = await shot(browser, 'roll', { width: 57, diameter: 40, size: 1000, supersample: 2, distance: big.distance * 0.8 });
-      jobs.push({ src: saveRaw('roll-80x80', dataUrlToBuffer(big.image)), out: join(IMG, 'roll-80x80'), size: [1000, 1000], formats: ['webp', 'png'], webp_max_bytes: 118_000 });
-      jobs.push({ src: saveRaw('roll-57x40', dataUrlToBuffer(small.image)), out: join(IMG, 'roll-57x40'), size: [1000, 1000], formats: ['webp', 'png'], webp_max_bytes: 118_000 });
+      jobs.push({ src: saveRaw('roll-80x80', dataUrlToBuffer(big.image)), out: join(IMG, 'roll-80x80'), size: [1000, 1000], formats: ['webp', 'png'], webp_max_bytes: 118_000, png_max_bytes: PNG_MAX_BYTES });
+      jobs.push({ src: saveRaw('roll-57x40', dataUrlToBuffer(small.image)), out: join(IMG, 'roll-57x40'), size: [1000, 1000], formats: ['webp', 'png'], webp_max_bytes: 118_000, png_max_bytes: PNG_MAX_BYTES });
     }
-    if (want('rolls-stack')) {
-      const img = await shot(browser, 'stack', { width: 1600, height: 1000, supersample: 2 });
-      jobs.push({ src: saveRaw('rolls-stack', dataUrlToBuffer(img)), out: join(IMG, 'rolls-stack'), size: [1600, 1000], formats: ['webp', 'png'], webp_max_bytes: 200_000 });
+    // «Производство»: тёмная студия, края сходят ровно в фон секции #141517 (кадр непрозрачный).
+    if (want('production-roll')) {
+      const img = await shot(browser, 'production', { width: 1600, height: 1200, supersample: 2 });
+      jobs.push({ src: saveRaw('production-roll', dataUrlToBuffer(img)), out: join(IMG, 'production-roll'), size: [1600, 1200], formats: ['webp', 'png'], webp_max_bytes: 245_000, background: '#141517', png_max_bytes: PNG_MAX_BYTES });
     }
     let brand = null;
     if (want('brand') || want('og-image')) {
@@ -124,6 +129,11 @@ async function main() {
     const jobsFile = join(tmp, 'jobs.json');
     writeFileSync(jobsFile, JSON.stringify(jobs));
     execFileSync('python3', ['-I', join(HERE, 'encode.py'), jobsFile], { stdio: 'inherit' });
+    for (const job of jobs) {
+      if (!job.png_max_bytes || !job.formats.includes('png')) continue;
+      const { before, after, colors } = quantizeFile(`${job.out}.png`, { maxBytes: job.png_max_bytes });
+      console.log(`${job.out}.png: палитра ${colors} цветов, ${Math.round(before / 1000)} → ${Math.round(after / 1000)} КБ`);
+    }
   }
   rmSync(tmp, { recursive: true, force: true });
 }

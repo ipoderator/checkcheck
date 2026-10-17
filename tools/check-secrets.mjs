@@ -15,6 +15,9 @@ export const SECRET_KEYS = [
 // Расширения, где «KEY: значение» без кавычек — это значение (а не выражение кода).
 const PLAIN_CONFIG_EXT = new Set(['.yml', '.yaml', '.ini', '.conf', '.cfg', '.toml', '.properties', '.txt', '']);
 const MAX_SIZE = 2 * 1024 * 1024;
+// История сборки: заметки аудита цитируют формы утечек с выдуманными значениями.
+// Здесь ищется только токен Telegram — его формат не спутать с примером.
+const HISTORY_DIR = '.autopilot/';
 
 // Значения-подсказки в документации: <токен>, ${VAR}, $VAR, …
 const PLACEHOLDER = /^(<[^>]*>|\$\{?[A-Za-z_]\w*\}?|\.\.\.|…|\[[^\]]*\])$/u;
@@ -35,22 +38,42 @@ function isRealValue(raw) {
   return !PLACEHOLDER.test(v);
 }
 
+// Значение-литерал: строка в кавычках или число без кавычек.
+const LITERAL = String.raw`(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|\`([^\`]*)\`|(-?\d[\d_.]*)(?![\w.]))`;
+
+// Токен бота Telegram: id бота, двоеточие, 35 знаков. Ищется без имени ключа: в URL (…/bot<токен>/…) и голым.
+const TELEGRAM_TOKEN = /(?<![0-9])[0-9]{8,10}:[A-Za-z0-9_-]{35}(?![A-Za-z0-9_-])/g;
+
+function keyPatterns(file, key) {
+  const k = `(?<![A-Za-z0-9_])${escapeRe(key)}(?![A-Za-z0-9_])`;
+  const patterns = [
+    // dotenv / shell: KEY=value, export KEY="value", а также KEY=value внутри строки (putenv, команды)
+    new RegExp(`${k}=(?![=>])("[^"]*"|'[^']*'|[^\\s'"\`;,)]*)`, 'g'),
+    // PHP / JSON / JS / YAML / TOML: 'KEY' => 'value', "KEY": -100500, KEY: 'value', KEY = 12345
+    new RegExp(`['"]?${k}['"]?\\s*(?:=>|:|=(?![=>]))\\s*${LITERAL}`, 'g'),
+    // Apache и Dockerfile: SetEnv KEY value, ENV KEY value
+    new RegExp(`(?:^|\\s)(?:SetEnv|ENV)\\s+${k}\\s+("[^"]*"|'[^']*'|[^\\s#]+)`, 'g'),
+    // PHP: define('KEY', 'value')
+    new RegExp(`define\\(\\s*['"]${k}['"]\\s*,\\s*${LITERAL}`, 'g'),
+    // присваивание элементу: $c['KEY'] = 'value', os.environ["KEY"] = 'value'
+    new RegExp(`\\[\\s*['"]${k}['"]\\s*\\]\\s*=(?![=>])\\s*${LITERAL}`, 'g'),
+    // запасное значение: getenv('KEY') ?: 'value', process.env.KEY || 'value', $_ENV['KEY'] ?? 'value'
+    new RegExp(`${k}['"]?\\s*[\\])]*\\s*(?:\\?:|\\|\\||\\?\\?)\\s*${LITERAL}`, 'g'),
+  ];
+  if (isPlainConfig(file)) {
+    // YAML / ini без кавычек: KEY: value
+    patterns.push(new RegExp(`^\\s*${k}\\s*:\\s*([^\\s#'"][^#]*?)\\s*$`, 'g'));
+  }
+  return patterns;
+}
+
 /** @returns {{ line: number, key: string }[]} */
 export function findLeaks(file, text) {
   const found = [];
   const lines = text.split(/\r?\n/);
-  for (const key of SECRET_KEYS) {
-    const k = `(?<![A-Za-z0-9_])${escapeRe(key)}(?![A-Za-z0-9_])`;
-    const patterns = [
-      // dotenv / shell: KEY=value, export KEY="value", а также KEY=value внутри строки (putenv, команды)
-      new RegExp(`${k}=(?!=)("[^"]*"|'[^']*'|[^\\s'"\`;,)]*)`, 'g'),
-      // PHP / JSON / JS / YAML с кавычками: 'KEY' => 'value', "KEY": "value", KEY: 'value'
-      new RegExp(`['"]?${k}['"]?\\s*(?:=>|:|=)\\s*(?:"((?:\\\\.|[^"\\\\])*)"|'((?:\\\\.|[^'\\\\])*)'|\`([^\`]*)\`)`, 'g'),
-    ];
-    if (isPlainConfig(file)) {
-      // YAML / ini без кавычек: KEY: value
-      patterns.push(new RegExp(`^\\s*${k}\\s*:\\s*([^\\s#'"][^#]*?)\\s*$`, 'g'));
-    }
+  const history = file.replace(/\\/g, '/').startsWith(HISTORY_DIR);
+  for (const key of history ? [] : SECRET_KEYS) {
+    const patterns = keyPatterns(file, key);
     lines.forEach((line, i) => {
       for (const re of patterns) {
         re.lastIndex = 0;
@@ -67,6 +90,10 @@ export function findLeaks(file, text) {
       }
     });
   }
+  lines.forEach((line, i) => {
+    TELEGRAM_TOKEN.lastIndex = 0;
+    if (TELEGRAM_TOKEN.test(line)) found.push({ line: i + 1, key: 'TELEGRAM_BOT_TOKEN' });
+  });
   return found;
 }
 
