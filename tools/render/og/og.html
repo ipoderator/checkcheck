@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>OG-картинка ВсеЧеки</title>
+<!-- Макет OG-картинки 1200 × 630. Снимается скриншотом из tools/render/render.mjs:
+     /og/logo.svg и /og/roll.png подставляет рендер (свежий логотип и рулон). -->
+<style>
+  @font-face { font-family: 'Unbounded'; src: url(/render/fonts/Unbounded-subset.ttf) format('truetype'); font-weight: 200 900; }
+  @font-face { font-family: 'Manrope'; src: url(/render/fonts/Manrope-subset.ttf) format('truetype'); font-weight: 200 800; }
+  :root { --paper: #F7F6F2; --ink: #141517; --gray: #5E6066; --line: #DCDAD3; --accent: #E5352B; }
+  html, body { margin: 0; }
+  body { width: 1200px; height: 630px; overflow: hidden; background: var(--paper); position: relative; font-family: 'Manrope', sans-serif; color: var(--ink); }
+  .roll { position: absolute; left: 572px; top: -14px; width: 690px; height: 690px; }
+  .copy { position: absolute; left: 76px; top: 72px; width: 560px; }
+  .logo { display: block; height: 58px; }
+  h1 { margin: 92px 0 0; font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 50px; line-height: 1.12; letter-spacing: -0.01em; }
+  .formats { display: flex; gap: 12px; margin-top: 40px; }
+  .formats span { font-weight: 600; font-size: 22px; padding: 10px 18px; border: 2px solid var(--line); border-radius: 999px; background: #FFFFFF; }
+  .formats span.custom { color: var(--gray); }
+  .stripe { position: absolute; left: 0; bottom: 0; width: 1200px; height: 10px; background: var(--accent); }
+</style>
+</head>
+<body>
+  <img class="roll" src="/og/roll.png" alt="">
+  <div class="copy">
+    <img class="logo" src="/og/logo.svg" alt="ВсеЧеки">
+    <h1>Кассовая лента от&nbsp;производителя</h1>
+    <div class="formats"><span>57&nbsp;×&nbsp;40</span><span>80&nbsp;×&nbsp;80</span><span class="custom">под&nbsp;заказ</span></div>
+  </div>
+  <div class="stripe"></div>
+<script>
+  Promise.all([
+    document.fonts.load('700 50px Unbounded'),
+    document.fonts.load('600 22px Manrope'),
+    ...[...document.images].map((img) => img.decode()),
+  ]).then(() => { window.ogReady = true; });
+</script>
+</body>
+</html>
