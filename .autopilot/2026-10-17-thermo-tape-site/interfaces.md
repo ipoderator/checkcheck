@@ -105,7 +105,7 @@ interface LeadChannel { public function name(): string; public function isConfig
 - Кнопка: `<button type="submit" data-lead-submit>`.
 - Внешние ссылки на форму: `href="#price"`, `href="#partner"`; кнопка формата: `data-lead-format="57x40|80x80|other"` → открывает вкладку price и выставляет формат.
 - Черновик: ключ `localStorage` `vsecheki:lead-draft:v1` — JSON полей (без `website`, `form_elapsed_ms`); доступ в try/catch.
-- Без JS: форма отправляется обычным POST; `lead.php` при `Accept`, не содержащем `application/json`, отвечает той же JSON-структурой. Это допустимо: основной путь — JS.
+- Без JS: форма отправляется обычным POST; `lead.php` при `Accept`, не содержащем `application/json`, отвечает HTML-страницей для человека (`LeadPage`, ADR 0007). JS шлёт `Accept: application/json` и получает JSON.
 
 ### Модуль UI — `main.js`
 

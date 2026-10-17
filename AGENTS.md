@@ -17,12 +17,16 @@
 | Проверка PHP 7.4 | `node tests/helpers/php-lint.mjs` |
 | Проверка секретов | `node tools/check-secrets.mjs` |
 | Перерендер картинок (~70 с; python3, Pillow, fontTools) | `npm run images` |
+| Адрес сайта перед публикацией (canonical, og, JSON-LD, `robots.txt`, `public/sitemap.xml`; `-- ""` откатывает) | `npm run set-site-url -- https://домен` |
+| Квантование PNG в палитру | `node tools/render/quantize.mjs файл.png` |
 
 ## Где что
 
 - Архитектура, поток формы -> `api/lead.php` -> каналы, соглашения: `docs/architecture.md`.
 - Решения и их причины: `docs/adr/`; словарь предметной области: `CONTEXT.md`.
 - Бэкенд заявок: `public/api/lead.php` (вход), `public/app/LeadService.php` (логика), `public/app/LeadRequest.php` (поля и валидация).
+- Без JS (`Accept` без `application/json`) `api/lead.php` отвечает HTML-страницей из `public/app/LeadPage.php`, с `Accept: application/json` — JSON.
+- Адрес сайта: `site.config.json` (`siteUrl`, пусто до публикации), правит его `tools/set-site-url.mjs`; места в страницах помечены комментарием `site-url`.
 - Фронт: `public/index.html`, `public/assets/js/lead-form.js` (форма), `public/assets/js/main.js` (UI), `public/assets/css/main.css`.
 - Хелперы тестов (PHP-сервер, поддельные SMTP и Telegram): `tests/helpers/`.
 - Рендер изображений в `public/assets/img/`: `tools/render/`.
@@ -36,6 +40,9 @@
 - `php -S` отдаёт главную на несуществующие пути; 404 только на Apache через `public/.htaccess`. e2e идёт на `php -S` без `tools/dev-router.php`, поэтому 403 на `/app/` там не проверить.
 - `public/storage/` и `public/app/config.php` в `.gitignore`: файлы rate limit и конфиг не коммитить.
 - Факты на сайте только те, что сообщил владелец: без цен, характеристик, сертификатов, клиентов, отзывов.
+- Место производства на сайте не называется (Лейпциг снят владельцем): тест `tests/api/no-leipzig.test.mjs`. Липецк — город продавца в контактах, его не трогать.
+- Параллельные прогоны Playwright (и любой второй `npm test`): свой `E2E_PORT` и `--output <папка>`, иначе порт и папка результатов общие.
+- PNG в `public/assets/img/` после рендера квантуются `tools/render/quantize.mjs`; каждый не тяжелее 400 КБ (`tests/api/images.test.mjs`).
 - Изображения не фотографии, а 3D-визуализации (`CONTEXT.md`): не подавать как фото производства.
 
 ## Окружение
@@ -45,7 +52,7 @@
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — канал Telegram; нужны оба.
 - `LEAD_EMAIL_TO`, `LEAD_EMAIL_FROM` — получатель и отправитель письма.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE` (`ssl` | `tls` | пусто) — SMTP; без `SMTP_HOST` письма идут через `mail()`.
-- Только для тестов: `TELEGRAM_API_BASE`, `MAIL_TRANSPORT` (`file` пишет письма в `STORAGE_DIR/outbox/`), `STORAGE_DIR`, `E2E_PORT` (по умолчанию 8091).
+- Только для тестов: `TELEGRAM_API_BASE`, `MAIL_TRANSPORT` (`file` пишет письма в `STORAGE_DIR/outbox/`), `STORAGE_DIR`, `E2E_PORT` (по умолчанию 8091), `E2E_STORAGE_DIR` (по умолчанию временная папка).
 
 ## Как здесь работает Autopilot
 
