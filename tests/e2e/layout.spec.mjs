@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test';
 
 const WIDTHS = [360, 390, 768, 1024, 1440, 1920];
-const SECTIONS = ['why', 'products', 'production', 'process', 'delivery', 'partners', 'faq', 'order', 'contacts', 'requisites'];
+const SECTIONS = ['why', 'products', 'process', 'delivery', 'partners', 'faq', 'order', 'contacts', 'requisites'];
 
 for (const width of WIDTHS) {
   test(`без горизонтальной прокрутки на ширине ${width}`, async ({ page }) => {

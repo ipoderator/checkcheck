@@ -1,5 +1,5 @@
 // Проверка в браузере на 360 / 375 / 390 / 1440 (G27, G29): прокрутка, меню, якоря, картинки,
-// клавиатура, консоль. Плюс мобильные правки аудита: «/» в списке партнёров, подсказка
+// клавиатура, консоль. Плюс мобильные правки аудита: плашки партнёров, подсказка
 // количества на 360, 404 со ссылкой «Перейти к содержимому».
 import { test, expect } from '@playwright/test';
 
@@ -55,7 +55,7 @@ for (const width of WIDTHS) {
             declared: [Number(img.getAttribute('width')), Number(img.getAttribute('height'))],
           }));
         });
-        expect(images.length).toBeGreaterThanOrEqual(4);
+        expect(images.length).toBeGreaterThanOrEqual(3); // герой и два формата
         for (const img of images) {
           expect(img.natural[0], img.src).toBeGreaterThan(0);
           expect(img.natural[0] / img.natural[1], img.src).toBeCloseTo(img.declared[0] / img.declared[1], 2);
@@ -68,7 +68,7 @@ for (const width of WIDTHS) {
     test('каждая ссылка навигации доводит до раздела, шапка его не перекрывает', async ({ page }) => {
       await page.goto('/');
       const hrefs = await page.locator(mobile ? '.mobile-menu__list a' : '.site-nav a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
-      expect(hrefs.length).toBe(8);
+      expect(hrefs.length).toBe(7);
       for (const href of hrefs) {
         if (mobile) {
           await page.locator('[data-menu-toggle]').click();
@@ -154,19 +154,19 @@ for (const width of WIDTHS) {
         await expect(toggle).toHaveAttribute('aria-expanded', 'false');
       });
 
-      test('«/» в списке партнёров стоит сразу за словом, а не у правого края', async ({ page }) => {
+      test('плашки партнёров компактные и не вылезают за край экрана', async ({ page }) => {
         await page.goto('/#partners');
-        const gaps = await page.evaluate(() => [...document.querySelectorAll('.partner-types li:not(:last-child)')].map((li) => {
-          const range = document.createRange();
-          range.selectNodeContents(li);
-          const rects = [...range.getClientRects()];
-          const textRight = rects.length ? rects[rects.length - 1].right : li.getBoundingClientRect().left;
-          const after = getComputedStyle(li, '::after');
-          // Правый край текста последней строки + «/» и отступы не должны упираться в край списка, если строка короткая.
-          const fs = parseFloat(after.fontSize);
-          return { text: li.textContent, textRight, liRight: li.getBoundingClientRect().right, fs };
+        const chips = await page.evaluate(() => [...document.querySelectorAll('#partners .partner-types li')].map((li) => {
+          const r = li.getBoundingClientRect();
+          return { text: li.textContent, left: r.left, right: r.right, height: r.height, fs: parseFloat(getComputedStyle(li).fontSize), vw: window.innerWidth };
         }));
-        for (const g of gaps) expect(g.liRight - g.textRight, g.text).toBeLessThan(g.fs * 1.5);
+        expect(chips).toHaveLength(5);
+        for (const c of chips) {
+          expect(c.fs, c.text).toBeLessThanOrEqual(24);
+          expect(c.right, c.text).toBeLessThanOrEqual(c.vw);
+          expect(c.left, c.text).toBeGreaterThanOrEqual(0);
+          expect(c.height, c.text).toBeLessThan(c.fs * 4); // плашка в одну строку, а не столбик из слов
+        }
       });
 
       test('подсказка «Количество» помещается в поле', async ({ page }) => {

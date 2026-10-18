@@ -99,6 +99,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function initLeadForm(form) {
   const readyAt = performance.now();
   const els = form.elements;
+  // Тип заявки — радиогруппа name="type" (видна без JS); с JS её значение пишут вкладки.
+  // namedItem вернёт RadioNodeList: .value читает и выставляет отмеченную радиокнопку.
   const typeInput = els.namedItem('type');
   const tabs = [...form.querySelectorAll('[data-lead-type]')];
   const panel = form.querySelector('[role="tabpanel"]');
@@ -387,6 +389,8 @@ function initLeadForm(form) {
     }
   });
   form.addEventListener('change', (event) => {
+    // Радио типа видны, только если UI-скрипт не поднялся (класс js снят): держим вкладки в согласии.
+    if (event.target.matches('input[name="type"]')) setType(event.target.value === 'partner' ? 'partner' : 'price');
     if (event.target.matches('input[name="format"]')) updateCustom();
     updateSummary();
     scheduleSave();
@@ -424,12 +428,24 @@ function initLeadForm(form) {
     els.namedItem('name').focus();
   });
 
-  // Ссылки #price / #partner в любом месте страницы открывают нужную вкладку.
+  /** Фокус — на выбранную вкладку (или радиокнопку, если вкладок не видно), без прокрутки. */
+  function focusType() {
+    const type = typeInput.value === 'partner' ? 'partner' : 'price';
+    const tab = tabs.find((el) => el.dataset.leadType === type);
+    const radio = form.querySelector(`input[name="type"][value="${type}"]`);
+    const target = tab && tab.getClientRects().length ? tab : radio;
+    if (target && !target.disabled) target.focus({ preventScroll: true });
+  }
+
+  // Ссылки #price / #partner в любом месте страницы открывают нужную вкладку и переводят фокус в форму.
   document.addEventListener('click', (event) => {
     const link = event.target.closest('a[href="#price"], a[href="#partner"]');
     if (!link) return;
     setType(link.getAttribute('href').slice(1));
     scheduleSave();
+    if (form.dataset.state === 'success') return; // на экране «Спасибо» вкладок нет
+    // После обработчика браузер переходит к якорю и сбрасывает фокус — фокусируем следующей задачей.
+    setTimeout(focusType, 0);
   });
   window.addEventListener('hashchange', () => {
     const hash = window.location.hash.slice(1);

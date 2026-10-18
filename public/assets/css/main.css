@@ -720,24 +720,36 @@ img { color: transparent; font-size: 0; }
   rotate: -7deg;
 }
 
-.why-list { margin-top: 0; }
-.why-row {
+/* Суть бывшего «Производства» — строка «чека»: подпись, точечная выноска, значение. */
+.why-facts {
   display: grid;
-  grid-template-columns: 80px minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px 32px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 40px;
+  margin-bottom: clamp(32px, 4vw, 56px);
+  border-top: 2px solid var(--ink);
+  font-family: var(--f-mono);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.why-facts > div {
+  display: flex;
   align-items: baseline;
-  padding: 26px 0;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 0;
   border-bottom: 1px dashed var(--line);
 }
-.why-row__num { font-family: var(--f-mono); font-weight: 600; font-size: 14px; color: var(--accent-ink); }
-.why-row__title {
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: clamp(1.25rem, 0.8rem + 1.2vw, 2.2rem);
-  line-height: 1.08;
-  letter-spacing: -0.03em;
+.why-facts > div::before {
+  content: '';
+  order: 1;
+  flex: 1 1 auto;
+  min-width: 16px;
+  border-bottom: 2px dotted currentColor;
+  opacity: .35;
+  transform: translateY(-4px);
 }
-.why-row__text { color: var(--muted); }
+.why-facts dt { flex: none; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.why-facts dd { order: 2; margin: 0; font-weight: 600; color: var(--ink); text-align: right; }
 
 @media (max-width: 1099px) {
   .why-main { grid-template-columns: 1fr; }
@@ -745,12 +757,11 @@ img { color: transparent; font-size: 0; }
   .why-card + .why-card { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
   .why-card__num { padding-bottom: 12px; }
   .why-card__stamp { top: 30px; right: 0; }
-  .why-row { grid-template-columns: 56px minmax(0, 1fr); }
-  .why-row__text { grid-column: 2; }
+  .why-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
 }
 @media (max-width: 699px) {
-  .why-row { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 22px 0; }
-  .why-row__text { grid-column: 1; }
+  .why-facts { grid-template-columns: minmax(0, 1fr); font-size: 14px; }
+  .why-facts > div { padding: 12px 0; }
 }
 @media (max-width: 899px) {
   .section-head--split { grid-template-columns: minmax(0, 1fr); align-items: start; }
@@ -866,56 +877,7 @@ img { color: transparent; font-size: 0; }
   .format-card .btn { width: 100%; }
 }
 
-/* ---------- 03. Производство ---------- */
-.production { overflow: clip; }
-.production__word {
-  font-family: var(--f-display);
-  font-weight: 800;
-  font-size: min(21vw, 19rem);
-  line-height: .82;
-  letter-spacing: -0.05em;
-  text-transform: uppercase;
-  color: #26282D;
-  margin-bottom: clamp(32px, 4vw, 64px);
-  white-space: nowrap;
-}
-.production__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  gap: 32px 80px;
-  align-items: end;
-}
-.production__grid .section-head { margin-bottom: 0; }
-.spec-list {
-  font-family: var(--f-mono);
-  font-size: 15px;
-  border-top: 2px solid var(--on-dark);
-}
-.spec-list > div {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 16px;
-  padding: 14px 0;
-  border-bottom: 1px dashed var(--dark-line);
-}
-.spec-list dt { text-transform: uppercase; letter-spacing: .1em; font-size: 13px; color: var(--on-dark-muted); }
-.spec-list dd { color: var(--on-dark); font-weight: 600; }
-.production__media { margin-top: clamp(40px, 5vw, 72px); }
-/* Края визуализации сходят в цвет секции (#141517): без рамки, скругления и подложки.
-   Пока файла нет, блок держит пропорции 4 : 3 и остаётся цвета фона. */
-.production__media img {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  background: var(--dark);
-  color: var(--on-dark-muted);
-}
-@media (max-width: 899px) { .production__grid { grid-template-columns: 1fr; } }
-
-/* ---------- 04. Как работаем ---------- */
+/* ---------- 03. Как работаем ---------- */
 .steps {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -968,7 +930,7 @@ img { color: transparent; font-size: 0; }
   .step__num { margin-bottom: 10px; line-height: 1; }
 }
 
-/* ---------- 05. Доставка ---------- */
+/* ---------- 04. Доставка ---------- */
 .delivery { background: var(--white); }
 .delivery__grid {
   display: grid;
@@ -1005,31 +967,91 @@ img { color: transparent; font-size: 0; }
 .ship-label .btn { margin-top: 20px; width: 100%; }
 @media (max-width: 899px) { .delivery__grid { grid-template-columns: 1fr; } }
 
-/* ---------- 06. Сотрудничество ---------- */
-.partner-types {
+/* ---------- 05. Сотрудничество ---------- */
+/* Один экран: кому подходит · что получаете · что указать в заявке, и одна кнопка. */
+.partners .section-head { margin-bottom: clamp(32px, 4vw, 56px); }
+.partners__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px 48px;
+}
+.partners__col { min-width: 0; padding-top: 20px; border-top: 2px solid var(--on-dark); }
+.partners__col-title {
+  margin-bottom: 16px;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+}
+.partner-types { display: flex; flex-wrap: wrap; gap: 8px; }
+.partner-types li {
+  padding: 9px 16px;
+  border: 1px solid var(--dark-line);
+  border-radius: 999px;
   font-family: var(--f-display);
-  font-weight: 700;
-  font-size: clamp(2rem, 0.6rem + 4.6vw, 5.6rem);
-  line-height: 1.08;
-  letter-spacing: -0.045em;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
   color: var(--on-dark);
 }
-/* Строчные элементы: «/» остаётся сразу за словом, даже когда «Сервисные компании» переносятся. */
-.partner-types li { display: inline; }
-.partner-types li:not(:last-child)::after { content: '/'; margin: 0 0.32em 0 0.4em; color: var(--accent); font-weight: 500; }
-.partner-types li:last-child { color: #8E9096; }
+/* «Любые партнёры» — главное: сотрудничество для всех. */
+.partner-types li:last-child { border-color: var(--accent); }
+.partners__list { counter-reset: ask; }
+.partners__list li {
+  position: relative;
+  padding: 9px 0 9px 22px;
+  border-bottom: 1px dashed var(--dark-line);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--on-dark);
+}
+.partners__list li:first-child { padding-top: 0; }
+.partners__list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: calc(9px + .45em);
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+}
+.partners__list li:first-child::before { top: .45em; }
+.partners__list--steps li { padding-left: 36px; counter-increment: ask; }
+.partners__list--steps li::before {
+  content: counter(ask, decimal-leading-zero);
+  top: 9px;
+  width: auto;
+  height: auto;
+  background: none;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.75;
+  color: var(--accent);
+}
+.partners__list--steps li:first-child::before { top: 0; }
 .partners__cta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 16px 32px;
-  margin-top: clamp(40px, 5vw, 72px);
+  margin-top: clamp(32px, 4vw, 56px);
   padding-top: 32px;
   border-top: 1px dashed var(--dark-line);
 }
 .partners__cta p { font-family: var(--f-mono); font-size: 15px; }
+@media (max-width: 899px) {
+  .partners__grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+}
+@media (max-width: 699px) {
+  .partners__cta { padding-top: 24px; }
+  .partners__cta .btn { width: 100%; }
+}
 
-/* ---------- 07. Вопросы ---------- */
+/* ---------- 06. Вопросы ---------- */
 .faq__grid {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr);
@@ -1178,6 +1200,15 @@ img { color: transparent; font-size: 0; }
 }
 .tabs__tab[aria-selected="true"] { background: var(--ink); color: var(--paper); }
 .tabs__tab:focus-visible { outline-offset: -6px; outline-color: var(--accent); }
+/* Тип заявки без JS: те же «вкладки», но это радиокнопки name="type"; с JS их скрывает .no-js-only,
+   а без JS скрыты кнопки-вкладки, которые без скрипта ничего не делают. */
+html:not(.js) .tabs--js { display: none; }
+.tabs--choice { min-width: 0; margin-inline: 0; }
+.tabs__item { position: relative; display: grid; }
+.tabs__input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+label.tabs__tab { display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; }
+.tabs__input:checked + .tabs__tab { background: var(--ink); color: var(--paper); }
+.tabs__input:focus-visible + .tabs__tab { outline: 3px solid var(--accent); outline-offset: -6px; }
 
 .field { margin: 0 0 16px; padding: 0; border: 0; min-width: 0; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
@@ -1421,6 +1452,8 @@ img { color: transparent; font-size: 0; }
 .js [data-reveal]:not(.is-visible) { opacity: 0; transform: translateY(28px); }
 .js .why-main [data-reveal]:nth-child(2), .js .formats [data-reveal]:nth-child(2), .js .steps [data-reveal]:nth-child(2) { transition-delay: .08s; }
 .js .why-main [data-reveal]:nth-child(3), .js .formats [data-reveal]:nth-child(3), .js .steps [data-reveal]:nth-child(3) { transition-delay: .16s; }
+.js .partners__grid [data-reveal]:nth-child(2) { transition-delay: .08s; }
+.js .partners__grid [data-reveal]:nth-child(3) { transition-delay: .16s; }
 .js .steps [data-reveal]:nth-child(4) { transition-delay: .24s; }
 .js .steps [data-reveal]:nth-child(5) { transition-delay: .32s; }
 .js .hero [data-reveal]:nth-child(2) { transition-delay: .06s; }

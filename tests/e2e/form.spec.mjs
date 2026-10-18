@@ -174,12 +174,12 @@ test('нет связи: отдельный текст, данные на мес
 test('вкладки: #partner и #price открывают нужную вкладку, кнопка формата подставляет формат', async ({ page }) => {
   await page.locator('main a[href="#partner"]').first().click();
   await expect(page.locator('[data-lead-type="partner"]')).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('#lead-form input[name="type"]')).toHaveValue('partner');
+  await expect(page.locator('#lead-form input[name="type"]:checked')).toHaveValue('partner');
   await expect(page.locator('[data-only="price"]').first()).toBeHidden();
 
   await page.locator('main a[href="#price"]').first().click();
   await expect(page.locator('[data-lead-type="price"]')).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('#lead-form input[name="type"]')).toHaveValue('price');
+  await expect(page.locator('#lead-form input[name="type"]:checked')).toHaveValue('price');
   await expect(page.locator('#lead-quantity')).toBeVisible();
 
   await page.click('[data-lead-type="partner"]');
@@ -193,6 +193,24 @@ test('вкладки: #partner и #price открывают нужную вкл�
 
   await page.goto('/#partner');
   await expect(page.locator('[data-lead-type="partner"]')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('вкладка «Сотрудничество» с JS: в запросе одно поле type=partner, без полей цены; радиокнопки типа скрыты', async ({ page }) => {
+  let body = '';
+  await mockLead(page, 200, { ok: true }, { onRequest: (req) => { body = req.postData() || ''; } });
+  await expect(page.locator('#lead-form input[name="type"]').first()).toBeHidden();
+  await expect(page.locator('[data-lead-type="partner"]')).toBeVisible();
+  await page.click('[data-lead-type="partner"]');
+  await fillRequired(page);
+  await page.fill('#lead-company', 'ООО «Ромашка»');
+  await page.click('[data-lead-submit]');
+  await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'success', { timeout: 10000 });
+  expect(body.match(/name="type"/g)).toHaveLength(1);
+  expect(body).toMatch(/name="type"\r\n\r\npartner/);
+  expect(body).not.toMatch(/name="(format|format_custom|quantity)"/);
+  // После успеха форма снова на вкладке «Рассчитать цену».
+  await expect(page.locator('[data-lead-type="price"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#lead-form input[name="type"]:checked')).toHaveValue('price');
 });
 
 test('«Очистить» стирает поля и черновик', async ({ page }) => {
@@ -390,5 +408,31 @@ test('без JS: свой размер при отмеченном 57 × 40 — 
   await page.click('[data-lead-submit]');
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('li', { hasText: 'Нужный размер:' })).toContainText('«Другой размер»');
+  await context.close();
+});
+
+test('без JS: тип заявки — радиокнопки; «Сотрудничество» уходит на сервер как type=partner', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto('/');
+  const price = page.getByRole('radio', { name: 'Рассчитать цену' });
+  const partner = page.getByRole('radio', { name: 'Сотрудничество' });
+  await expect(price).toBeChecked();
+  await expect(partner).not.toBeChecked();
+  await expect(page.locator('label[for="lead-type-partner"]')).toBeVisible();
+  await expect(page.locator('[data-lead-type="partner"]')).toBeHidden(); // кнопки-вкладки без JS не работают — их не видно
+  await partner.check(); // радио лежит поверх своей подписи-«вкладки» — касание по ней попадает в него
+  await expect(partner).toBeChecked();
+  await page.fill('#lead-name', 'Иван Петров');
+  await page.fill('#lead-phone', '8 920 000-00-00');
+  await page.check('#lead-consent');
+  const [request] = await Promise.all([
+    page.waitForRequest('**/api/lead.php'),
+    page.click('[data-lead-submit]'),
+  ]);
+  const sent = new URLSearchParams(request.postData());
+  expect(sent.getAll('type')).toEqual(['partner']);
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('h1')).toContainText(/Форма пока не\s+подключена/);
   await context.close();
 });

@@ -11,8 +11,6 @@ import { ROOT } from '../helpers/php-server.mjs';
 const PUBLIC = join(ROOT, 'public');
 const IMG = join(PUBLIC, 'assets', 'img');
 const KB = 1000;
-// Фон тёмных секций сайта: края картинки «Производства» сходят ровно в него.
-const DARK = [0x14, 0x15, 0x17];
 // Предел для PNG-запасных: квантование палитры (вторая задача, ист. 66).
 const PNG_MAX_BYTES = 400 * KB;
 
@@ -24,8 +22,6 @@ const RASTERS = [
   ['roll-57x40.png', 1000, 1000, true],
   ['roll-80x80.webp', 1000, 1000, true, 120 * KB],
   ['roll-80x80.png', 1000, 1000, true],
-  ['production-roll.webp', 1600, 1200, false, 250 * KB],
-  ['production-roll.png', 1600, 1200, false],
   ['og-image.png', 1200, 630, false],
   ['apple-touch-icon.png', 180, 180, false],
 ];
@@ -149,35 +145,16 @@ describe('изображения из таблицы interfaces.md', () => {
 
   test('каждый PNG в public/assets/img не тяжелее 400 КБ', () => {
     const pngs = readdirSync(IMG).filter((f) => f.endsWith('.png'));
-    assert.ok(pngs.length >= 6, `PNG мало: ${pngs.join(', ')}`);
+    assert.ok(pngs.length >= 5, `PNG мало: ${pngs.join(', ')}`);
     for (const f of pngs) {
       const size = statSync(join(IMG, f)).size;
       assert.ok(size <= PNG_MAX_BYTES, `${f}: ${Math.round(size / KB)} КБ > 400 КБ`);
     }
   });
 
-  test('production-roll.png: непрозрачная, края кадра — ровно фон секции #141517', () => {
-    const png = decodePng(readFileSync(join(IMG, 'production-roll.png')));
-    const { width, height } = png;
-    const bad = [];
-    const check = (x, y) => {
-      const [r, g, b, a] = png.pixel(x, y);
-      if (a !== 255 || r !== DARK[0] || g !== DARK[1] || b !== DARK[2]) bad.push(`(${x}, ${y}) = ${r},${g},${b},${a}`);
-    };
-    for (let d = 0; d < 3; d++) {
-      for (let x = 0; x < width; x++) { check(x, d); check(x, height - 1 - d); }
-      for (let y = 0; y < height; y++) { check(d, y); check(width - 1 - d, y); }
-    }
-    assert.deepEqual(bad.slice(0, 5), [], `на краях ${bad.length} пикселей не #141517`);
-    // В середине — предмет, а не пустой фон.
-    let light = 0;
-    for (let y = height * 0.3; y < height * 0.7; y += 4) {
-      for (let x = width * 0.3; x < width * 0.7; x += 4) {
-        const [r, g, b] = png.pixel(Math.round(x), Math.round(y));
-        if (r + g + b > 600) light++;
-      }
-    }
-    assert.ok(light > 500, `в центре кадра почти нет светлой бумаги (${light})`);
+  test('раздела «Производство» нет — и его картинки production-roll в public тоже', () => {
+    const left = readdirSync(IMG).filter((f) => f.startsWith('production-roll'));
+    assert.deepEqual(left, []);
   });
 
   test('стопки рулонов больше нет: ни файлов, ни кадра в рендере', () => {

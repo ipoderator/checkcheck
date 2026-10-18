@@ -46,7 +46,7 @@ test('изображения: размеры заданы, ниже первог
     src: img.getAttribute('src'), w: img.getAttribute('width'), h: img.getAttribute('height'),
     alt: img.getAttribute('alt'), loading: img.getAttribute('loading'), hero: !!img.closest('.hero, .site-header'),
   })));
-  expect(imgs.length).toBeGreaterThanOrEqual(4);
+  expect(imgs.length).toBeGreaterThanOrEqual(3); // герой и два формата
   for (const img of imgs) {
     expect(img.w, img.src).toBeTruthy();
     expect(img.h, img.src).toBeTruthy();
