@@ -27,7 +27,9 @@
 - Бэкенд заявок: `public/api/lead.php` (вход), `public/app/LeadService.php` (логика), `public/app/LeadRequest.php` (поля и валидация).
 - Без JS (`Accept` без `application/json`) `api/lead.php` отвечает HTML-страницей из `public/app/LeadPage.php`, с `Accept: application/json` — JSON.
 - Адрес сайта: `site.config.json` (`siteUrl`, пусто до публикации), правит его `tools/set-site-url.mjs`; места в страницах помечены комментарием `site-url`.
-- Фронт: `public/index.html`, `public/assets/js/lead-form.js` (форма), `public/assets/js/main.js` (UI), `public/assets/css/main.css`.
+- Фронт: `public/index.html`, `public/assets/js/lead-form.js` (форма), `public/assets/js/main.js` (UI), `public/assets/js/theme.js` (светлая/тёмная тема на всех страницах: обычный скрипт в `<head>`, выбор ставит `data-theme` на `<html>`), `public/assets/css/main.css`.
+- Тип заявки — радиогруппа `name="type"` (`price` | `partner`): без JS работает как есть, `lead-form.js` делает из неё вкладки.
+- e2e по теме и ленте: `tests/e2e/theme.spec.mjs`, `tape.spec.mjs`, `sweep.spec.mjs`; контраст текста считает `tests/helpers/contrast.mjs`.
 - Хелперы тестов (PHP-сервер, поддельные SMTP и Telegram): `tests/helpers/`.
 - Рендер изображений в `public/assets/img/`: `tools/render/`.
 
@@ -41,6 +43,8 @@
 - `public/storage/` и `public/app/config.php` в `.gitignore`: файлы rate limit и конфиг не коммитить.
 - Факты на сайте только те, что сообщил владелец: без цен, характеристик, сертификатов, клиентов, отзывов.
 - Место производства на сайте не называется (Лейпциг снят владельцем): тест `tests/api/no-leipzig.test.mjs`. Липецк — город продавца в контактах, его не трогать.
+- Светлые значения токенов записаны дважды: в `:root` и в `@media print` в `public/assets/css/main.css` (печать всегда светлая). Правишь светлый токен — меняй оба; сверку держит `tests/e2e/theme.spec.mjs`. Блоки тёмной темы (`prefers-color-scheme` и `data-theme="dark"`) тоже держать одинаковыми.
+- На чистой машине для e2e сначала `npx playwright install chromium`.
 - Параллельные прогоны Playwright (и любой второй `npm test`): свой `E2E_PORT` и `--output <папка>`, иначе порт и папка результатов общие.
 - PNG в `public/assets/img/` после рендера квантуются `tools/render/quantize.mjs`; каждый не тяжелее 400 КБ (`tests/api/images.test.mjs`).
 - Изображения не фотографии, а 3D-визуализации (`CONTEXT.md`): не подавать как фото производства.

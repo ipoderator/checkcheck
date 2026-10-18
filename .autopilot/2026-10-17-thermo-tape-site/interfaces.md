@@ -225,3 +225,19 @@ interface LeadChannel { public function name(): string; public function isConfig
 ### Швы для тестов
 
 Прежние: `tests/api` (HTTP-контракт, файлы) и `tests/e2e` (Playwright против `php -S`). Тема проверяется в e2e через `page.emulateMedia({ colorScheme })` и `localStorage`; без JS — `test.use({ javaScriptEnabled: false })`.
+
+### T06 — короче лендинг (выставлено)
+
+- Тип заявки: `<fieldset class="tabs tabs--choice no-js-only">` с радио `name="type"` (`#lead-type-price` checked, `#lead-type-partner`), подписи «Рассчитать цену»/«Сотрудничество»; с JS радио скрыты, вкладки `.tabs.tabs--js[role=tablist]` с `[data-lead-type]` прежние; без JS вкладки скрыты (`html:not(.js) .tabs--js`).
+- `typeInput` в `lead-form.js` — RadioNodeList. Клик по `a[href="#price"|"#partner"]` переводит фокус на выбранную вкладку. POST-контракт и черновик не менялись.
+- Новые классы: `.why-facts` (dl, 6 строк), `.partners__grid/__col/__col-title/__list(--steps)`; `.partner-types li` — плашки. Удалены `.production*`, `.spec-list`, `.why-list`, `.why-row*`. Новый CSS — только на токенах.
+
+### T07 — два рулона (выставлено)
+
+- `hero-roll.webp/.png` 1600×1600 — два рулона (80×80 с хвостом «чека», 57×40 слева спереди); `og-image.png` 1200×630 из той же сцены. Кадр `production` и `--only production-roll` убраны из `tools/render`. Тест: под изображениями нет подписи «3D-визуализация…».
+
+### T08 — тема и лента (выставлено)
+
+- `<button class="theme-toggle" type="button" data-theme-toggle aria-pressed aria-label="Тёмная тема">` в `.site-header__actions` на всех 5 страницах; `theme.js` — обычный скрипт в `<head>` (на index — после inline-скрипта); `localStorage['vsecheki:theme']` = light|dark; `data-theme` на `<html>` только при ручном выборе; два `meta[name=theme-color]` с `media`, `theme.js` выставляет их из `--paper`.
+- Новые токены: `--sheet`, `--tape-ink`, `--tape-edge`, `--accent-text`, `--on-accent`, `--error*`, `--header-bg`, `--scrim`, `--footer-bg`, `--dark-edge`; `:root, .receipt` — светлые значения: форма-«чек» бумажная в обеих темах. Лента `--tape-w`: 44 / 40 (≤1099) / 32 (≤1023 и ≤699) / 24 (≤639). Логотип: `.logo__paper/.logo__print/.logo__cut`.
+- `.js .tape__*` ограничены `[data-tape]` — статичная лента на privacy/consent не прячется. Тесты: `tests/e2e/theme.spec.mjs`, `tests/e2e/tape.spec.mjs`.

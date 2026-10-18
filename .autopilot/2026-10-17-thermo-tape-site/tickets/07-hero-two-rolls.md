@@ -2,7 +2,7 @@
 
 **Требования:** G46, G47
 **Зависит от:** 06
-**Зона:** `tools/render/` · `public/assets/img/hero-roll.*` · `public/assets/img/og-image.png` · `tests/api/images.test.mjs` · `README.md`
+**Зона:** `tools/render/` · `public/assets/img/hero-roll.*` · `public/assets/img/og-image.png` · `tests/api/images.test.mjs` · `README.md` · `docs/`
 **Волна:** 7
 **Ревью:** нет
 **Модель:** обычная
@@ -27,4 +27,5 @@
 - [ ] Каждый PNG ≤ 400 КБ (`quantize.mjs`), тест `images.test` зелёный
 - [ ] Сцена и шаги рендера `production-roll` удалены из `tools/render/` (`scene/production.js`, `render.mjs`, `shots.js`) и строка из README; `npm run images` проходит целиком
 - [ ] Ни у одного изображения сайта нет видимой подписи «3D-визуализация…» под ним (тест); строка в подвале про 3D-визуализации остаётся
+- [ ] `docs/` под новое состояние: ADR 0009 больше не содержит прежнего названия города ни в какой форме (сейчас из-за строки 9 красный `tests/api/no-leipzig.test.mjs`, он сканирует `docs/`) и не описывает удалённый раздел «Производство» (факты теперь в «Почему ВсеЧеки», таск 06); `docs/architecture.md` и прочие ADR — без `#production`/`production-roll`; `no-leipzig` зелёный
 - [ ] Скриншот первого экрана 1440 и 375 приложен к отчёту (путь в scratchpad), картинка просмотрена глазами
