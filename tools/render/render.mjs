@@ -91,11 +91,6 @@ async function main() {
       jobs.push({ src: saveRaw('roll-80x80', dataUrlToBuffer(big.image)), out: join(IMG, 'roll-80x80'), size: [1000, 1000], formats: ['webp', 'png'], webp_max_bytes: 118_000, png_max_bytes: PNG_MAX_BYTES });
       jobs.push({ src: saveRaw('roll-57x40', dataUrlToBuffer(small.image)), out: join(IMG, 'roll-57x40'), size: [1000, 1000], formats: ['webp', 'png'], webp_max_bytes: 118_000, png_max_bytes: PNG_MAX_BYTES });
     }
-    // «Производство»: тёмная студия, края сходят ровно в фон секции #141517 (кадр непрозрачный).
-    if (want('production-roll')) {
-      const img = await shot(browser, 'production', { width: 1600, height: 1200, supersample: 2 });
-      jobs.push({ src: saveRaw('production-roll', dataUrlToBuffer(img)), out: join(IMG, 'production-roll'), size: [1600, 1200], formats: ['webp', 'png'], webp_max_bytes: 245_000, background: '#141517', png_max_bytes: PNG_MAX_BYTES });
-    }
     let brand = null;
     if (want('brand') || want('og-image')) {
       const { context, page } = await openPage(browser);

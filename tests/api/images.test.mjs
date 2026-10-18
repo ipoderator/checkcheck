@@ -166,6 +166,16 @@ describe('изображения из таблицы interfaces.md', () => {
     }
   });
 
+  test('под изображениями нет подписи «3D-визуализация…»: только alt и строка в подвале', () => {
+    const html = readFileSync(join(PUBLIC, 'index.html'), 'utf8');
+    assert.ok(!/<figcaption/i.test(html), 'есть figcaption');
+    // Видимый текст: без тегов; атрибуты alt в него не попадают.
+    const visible = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<[^>]*>/g, '\n');
+    const lines = visible.split('\n').map((l) => l.trim()).filter((l) => /3D-визуализац/i.test(l));
+    assert.equal(lines.length, 1, `подписей с «3D-визуализация»: ${lines.join(' | ')}`);
+    assert.match(lines[0], /Изображения продукции на(&nbsp;|\s)сайте/);
+  });
+
   test('светлый и тёмный варианты логотипа различаются', () => {
     const dark = readFileSync(join(PUBLIC, 'assets/brand/logo.svg'), 'utf8');
     const light = readFileSync(join(PUBLIC, 'assets/brand/logo-light.svg'), 'utf8');

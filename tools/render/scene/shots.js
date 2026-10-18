@@ -1,8 +1,7 @@
-// Кадры: что и как снимаем. Каждая функция возвращает PNG (data URL); фон прозрачный, кроме production.
+// Кадры: что и как снимаем. Каждая функция возвращает PNG (data URL); фон прозрачный.
 import * as THREE from 'three';
 import { Studio } from './studio.js';
 import { createRoll, createTail } from './roll.js';
-import { productionShot } from './production.js';
 
 async function loadFonts() {
   const faces = [
@@ -24,16 +23,20 @@ function standing(roll) {
 }
 
 const SHOTS = {
-  // Раздел «Производство»: непрозрачный кадр на фоне секции, края растворяются в фон.
-  production: (o) => productionShot(o),
-  // Первый экран: рулон 80 × 80 на боку, хвост-«чек» сходит сверху и ложится к зрителю.
+  // Первый экран: два рулона на боку, 80 × 80 и 57 × 40 — те же форматы, что продаются.
+  // У большого сходит короткий хвост-«чек» (только слово ВсеЧеки и абстрактные строки).
   hero({ size = 1600, supersample = 2 } = {}) {
     const st = new Studio({ width: size, height: size, supersample });
-    const roll = lying(createRoll({ width: 80, diameter: 80, seed: 2 }));
-    const tail = createTail(roll, { phi: 28, wrap: 150, reach: 76, flat: 128, curl: 7, seed: 21 });
-    roll.add(tail);
-    st.add(roll);
-    st.frame({ azimuth: -30, elevation: 36, fov: 22, margin: 0.05 });
+    const big = lying(createRoll({ width: 80, diameter: 80, seed: 2 }));
+    const tail = createTail(big, { phi: 28, wrap: 150, reach: 76, flat: 128, curl: 7, seed: 21 });
+    big.add(tail);
+    big.position.x = 24;
+    const small = lying(createRoll({ width: 57, diameter: 40, seed: 97 }));
+    small.position.set(-74, small.position.y, 56);
+    small.rotation.y = 0.12;
+    st.add(big);
+    st.add(small);
+    st.frame({ azimuth: -30, elevation: 34, fov: 22, margin: 0.05 });
     st.light();
     st.contact();
     return st.render();
