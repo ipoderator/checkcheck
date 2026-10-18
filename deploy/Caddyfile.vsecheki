@@ -1,0 +1,10 @@
+# Блок для Caddy, который держит 80/443 на сервере (Caddyfile проекта coffee-ride).
+# Домен всечеки.site в punycode. Контейнер vsecheki-web должен быть в той же сети Docker.
+xn--b1agamj3b4b.site {
+	encode gzip
+	reverse_proxy vsecheki-web:80
+}
+
+www.xn--b1agamj3b4b.site {
+	redir https://xn--b1agamj3b4b.site{uri} permanent
+}

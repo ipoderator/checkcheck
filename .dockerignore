@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+node_modules
+test-results
+playwright-report
+public/storage
+public/app/config.php
+.autopilot

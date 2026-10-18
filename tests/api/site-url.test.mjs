@@ -117,9 +117,15 @@ describe('npm run set-site-url', () => {
     assert.equal(pkg.scripts['set-site-url'], 'node tools/set-site-url.mjs');
   });
 
-  test('рабочие файлы: адрес пустой, заглушек ДОМЕН нет, повторный запуск ничего не меняет', () => {
-    assert.equal(JSON.parse(readFileSync(join(ROOT, 'site.config.json'), 'utf8')).siteUrl, '');
-    assertEmpty(ROOT);
+  // До публикации адрес пустой; после (2026-10-18 — https://всечеки.site) — абсолютный везде.
+  test('рабочие файлы: адрес пустой или опубликованный, заглушек ДОМЕН нет, повторный запуск ничего не меняет', () => {
+    const siteUrl = JSON.parse(readFileSync(join(ROOT, 'site.config.json'), 'utf8')).siteUrl;
+    if (siteUrl === '') assertEmpty(ROOT);
+    else {
+      assert.match(siteUrl, /^https:\/\/[a-z0-9.-]+$/);
+      assertAbsolute(ROOT, siteUrl);
+      assert.doesNotMatch(textOfPublic(ROOT), /ДОМЕН/);
+    }
     const copy = makeCopy();
     try {
       const res = run(copy);
@@ -167,6 +173,12 @@ describe('npm run set-site-url', () => {
     const res = run(root, '');
     assert.equal(res.status, 0, res.stderr);
     assertEmpty(root);
-    assert.deepEqual(snapshot(root), snapshot(ROOT));
+    // Эталон исходного состояния — свежая копия рабочих файлов, сброшенная тем же способом:
+    // рабочие файлы сами могут быть уже опубликованными.
+    const base = makeCopy();
+    try {
+      assert.equal(run(base, '').status, 0);
+      assert.deepEqual(snapshot(root), snapshot(base));
+    } finally { rmSync(base, { recursive: true, force: true }); }
   });
 });

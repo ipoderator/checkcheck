@@ -4,3 +4,5 @@ Allow: /
 Disallow: /api/
 Disallow: /app/
 Disallow: /storage/
+
+Sitemap: https://xn--b1agamj3b4b.site/sitemap.xml

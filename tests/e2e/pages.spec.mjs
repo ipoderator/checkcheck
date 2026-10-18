@@ -1,5 +1,9 @@
 // Юридические страницы, 404, файлы для поисковиков, мета-теги и разрешённые факты.
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+
+// Адрес сайта (`npm run set-site-url`): пустой до публикации, абсолютный после.
+const SITE_URL = JSON.parse(readFileSync(new URL('../../site.config.json', import.meta.url), 'utf8')).siteUrl;
 
 // Числа, которые разрешено показывать на главной: форматы, телефон, ИНН, номера разделов и шагов.
 const ALLOWED_NUMBERS = new Set([
@@ -23,10 +27,17 @@ test('мета-теги, Open Graph и JSON-LD Organization только из р
   await page.goto('/');
   await expect(page).toHaveTitle(/ВсеЧеки/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /кассов/i);
-  // Адрес сайта не задан (site.config.json): canonical и og:url нет, картинка — корневой путь.
-  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
-  await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', '/assets/img/og-image.png');
+  if (SITE_URL) {
+    // Адрес задан: canonical, og:url и og:image — абсолютные на этот адрес.
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${SITE_URL}/`);
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', `${SITE_URL}/`);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${SITE_URL}/assets/img/og-image.png`);
+  } else {
+    // Адрес не задан: canonical и og:url нет, картинка — корневой путь.
+    await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+    await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', '/assets/img/og-image.png');
+  }
   expect(await page.content()).not.toContain('ДОМЕН');
   await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /Собственное производство/);
   const ld = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
@@ -76,11 +87,12 @@ test('privacy.html описывает данные, цели, сроки и пр
 });
 
 for (const path of ['/privacy.html', '/consent.html']) {
-  test(`${path}: называет передачу заявки через Telegram (трансграничную) и по e-mail`, async ({ page }) => {
+  // Владелец 2026-10-18: «только почта» — Telegram не подключён, трансграничной передачи нет.
+  test(`${path}: заявка доставляется только по e-mail, без Telegram и трансграничной передачи`, async ({ page }) => {
     await page.goto(path);
     const text = await page.evaluate(() => document.body.innerText);
-    expect(text).toContain('Telegram Messenger Inc.');
-    expect(text).toMatch(/трансграничн/i);
+    expect(text).not.toMatch(/telegram/i);
+    expect(text).not.toMatch(/трансграничн/i);
     expect(text).toMatch(/электронн\S*\sпочт/i);
   });
 }
@@ -104,6 +116,7 @@ test('404.html: оборванная лента и ссылка на главн�
 test('robots.txt без заглушки домена; Sitemap появляется только с адресом сайта', async ({ request }) => {
   const robots = await (await request.get('/robots.txt')).text();
   expect(robots).not.toContain('ДОМЕН');
-  expect(robots).not.toMatch(/^Sitemap:/m);
+  if (SITE_URL) expect(robots).toMatch(new RegExp(`^Sitemap: ${SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/sitemap\\.xml$`, 'm'));
+  else expect(robots).not.toMatch(/^Sitemap:/m);
   expect(robots).toMatch(/Disallow: \/api\//);
 });

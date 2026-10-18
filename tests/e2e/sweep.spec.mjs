@@ -2,9 +2,12 @@
 // формы — ошибки полей, «не настроено», успех — читаются в светлой и тёмной теме на телефоне и
 // компьютере. Ответы сервера подменяются через page.route: настоящих отправок нет.
 import { test, expect } from '@playwright/test';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { lowContrastTexts } from '../helpers/contrast.mjs';
+
+// Адрес сайта после `npm run set-site-url`: ссылки на него проверяются на локальном сервере.
+const SITE_URL = JSON.parse(readFileSync(new URL('../../site.config.json', import.meta.url), 'utf8')).siteUrl;
 
 const PAGES = ['/', '/privacy.html', '/consent.html', '/404.html'];
 const SHOTS = process.env.SHOT_DIR || '';
@@ -50,7 +53,8 @@ test('все ссылки и ресурсы страниц ведут на су�
     });
     const ids = await page.evaluate(() => new Set([...document.querySelectorAll('[id]')].map((e) => e.id)).size && [...document.querySelectorAll('[id]')].map((e) => e.id));
     const here = page.url();
-    for (const [tag, ref] of refs) {
+    for (const [tag, rawRef] of refs) {
+      const ref = SITE_URL && rawRef.startsWith(`${SITE_URL}/`) ? rawRef.slice(SITE_URL.length) : rawRef;
       if (/^(tel:|mailto:|data:|javascript:)/.test(ref)) continue;
       if (/^https?:\/\//.test(ref) && !ref.startsWith(baseURL)) { missing.push(`${path}: внешняя ${ref}`); continue; }
       if (ref.startsWith('#')) {

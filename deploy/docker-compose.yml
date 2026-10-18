@@ -1,0 +1,34 @@
+# Запуск на сервере: из корня проекта
+#   docker compose -f deploy/docker-compose.yml up -d --build
+# Настройки почты/Telegram — в файле .env в корне проекта на сервере (образец — .env.example).
+# Контейнер подключается к сети прокси, который держит 80/443 (сейчас — Caddy проекта coffee-ride),
+# под именем vsecheki-web; прокси отправляет на него запросы к домену сайта.
+name: vsecheki
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: vsecheki-web
+    restart: unless-stopped
+    env_file:
+      - path: ../.env
+        required: false
+    volumes:
+      - storage:/var/www/storage
+    networks:
+      - edge
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+volumes:
+  storage:
+
+networks:
+  edge:
+    external: true
+    name: ${EDGE_NETWORK:-coffee-ride_default}

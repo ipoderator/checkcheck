@@ -17,6 +17,7 @@
 | Проверка PHP 7.4 | `node tests/helpers/php-lint.mjs` |
 | Проверка секретов | `node tools/check-secrets.mjs` |
 | Перерендер картинок (~70 с; python3, Pillow, fontTools) | `npm run images` |
+| Публикация на свой сервер (Docker за Caddy coffee-ride, домен всечеки.site) | `bash deploy/publish.sh` — см. шапку скрипта |
 | Адрес сайта перед публикацией (canonical, og, JSON-LD, `robots.txt`, `public/sitemap.xml`; `-- ""` откатывает) | `npm run set-site-url -- https://домен` |
 | Квантование PNG в палитру | `node tools/render/quantize.mjs файл.png` |
 
