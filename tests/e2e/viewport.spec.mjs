@@ -4,6 +4,7 @@
 import { test, expect } from '@playwright/test';
 
 const WIDTHS = [360, 375, 390, 1440];
+const SCHEMES = ['light', 'dark'];
 const DESKTOP_MIN = 1380; // с этой ширины навигация в шапке, меню скрыто (main.js)
 
 /** Сбор ошибок консоли, исключений страницы и упавших запросов. */
@@ -27,13 +28,13 @@ async function scrollThrough(page) {
   });
 }
 
-for (const width of WIDTHS) {
+for (const scheme of SCHEMES) for (const width of WIDTHS) {
   const mobile = width < DESKTOP_MIN;
 
-  test.describe(`ширина ${width}`, () => {
+  test.describe(`${scheme === 'dark' ? 'тёмная' : 'светлая'} тема, ширина ${width}`, () => {
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize({ width, height: mobile ? 800 : 900 });
-      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: scheme });
     });
 
     test('без горизонтальной прокрутки; все изображения загружены с верными пропорциями; консоль чистая', async ({ page }) => {
@@ -41,6 +42,8 @@ for (const width of WIDTHS) {
       for (const path of ['/', '/privacy.html', '/consent.html', '/404.html']) {
         await page.goto(path);
         await page.evaluate(() => document.fonts.ready);
+        const [r, g, b] = await page.evaluate(() => getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number));
+        expect((r + g + b) / 3 < 80, `${path}: тема ${scheme}`).toBe(scheme === 'dark');
         await scrollThrough(page);
         const overflow = await page.evaluate(() => document.scrollingElement.scrollWidth - window.innerWidth);
         expect(overflow, path).toBeLessThanOrEqual(0);
