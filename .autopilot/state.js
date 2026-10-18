@@ -2,19 +2,19 @@ window.STATE =
 {
   "version": 2,
   "slug": "thermo-tape-site",
-  "dir": "2026-10-17-thermo-tape-site",
+  "dir": "2026-10-17-thermo-tape-site--wip",
   "title": "Сайт производителя кассовой термоленты",
   "mode": "semi",
-  "depth": "deep",
+  "depth": "normal",
   "tier": "T2",
-  "briefFile": "2026-10-17-brief.md",
+  "briefFile": "2026-10-18-brief.md",
   "memoryFile": "AGENTS.md",
   "memoryOwner": "autopilot",
   "skillDir": "/Users/glebchurkin/.claude/skills/autopilot",
   "baseCommit": "1e93436",
   "startedAt": "2026-10-17T16:25:30+03:00",
-  "updatedAt": "2026-10-18T00:05:41+03:00",
-  "finishedAt": "2026-10-18T00:05:41+03:00",
+  "updatedAt": "2026-10-18T11:59:12+03:00",
+  "finishedAt": null,
   "stages": [
     {
       "id": "preflight",
@@ -25,50 +25,43 @@ window.STATE =
     {
       "id": "manifest",
       "status": "done",
-      "startedAt": "2026-10-17T22:19:41+03:00",
-      "finishedAt": "2026-10-17T22:20:12+03:00"
+      "startedAt": "2026-10-18T11:34:45+03:00",
+      "finishedAt": "2026-10-18T11:36:58+03:00"
     },
     {
       "id": "briefing",
       "status": "done",
-      "startedAt": "2026-10-17T22:20:12+03:00",
-      "finishedAt": "2026-10-17T22:22:13+03:00"
+      "startedAt": "2026-10-18T11:36:58+03:00",
+      "finishedAt": "2026-10-18T11:48:43+03:00"
     },
     {
       "id": "spec",
       "status": "done",
-      "startedAt": "2026-10-17T22:22:13+03:00",
-      "finishedAt": "2026-10-17T22:42:20+03:00"
+      "startedAt": "2026-10-18T11:48:43+03:00",
+      "finishedAt": "2026-10-18T11:57:32+03:00"
     },
     {
       "id": "plan",
-      "status": "done",
-      "startedAt": "2026-10-17T22:42:20+03:00",
-      "finishedAt": "2026-10-17T22:43:21+03:00"
+      "status": "active",
+      "startedAt": "2026-10-18T11:57:32+03:00"
     },
     {
       "id": "build",
-      "status": "done",
-      "startedAt": "2026-10-17T22:43:21+03:00",
-      "finishedAt": "2026-10-17T23:48:58+03:00"
+      "status": "pending"
     },
     {
       "id": "review",
-      "status": "done",
-      "startedAt": "2026-10-17T23:48:58+03:00",
-      "finishedAt": "2026-10-17T23:58:58+03:00"
+      "status": "pending"
     },
     {
       "id": "final",
-      "status": "done",
-      "startedAt": "2026-10-17T23:58:58+03:00",
-      "finishedAt": "2026-10-18T00:05:41+03:00"
+      "status": "pending"
     }
   ],
   "requirements": {
-    "total": 71,
+    "total": 94,
     "done": 70,
-    "inTicket": 0,
+    "inTicket": 23,
     "inSpec": 0,
     "placeholder": 0,
     "deferred": 0,
@@ -342,6 +335,127 @@ window.STATE =
       "commit": "1de48ee"
     },
     {
+      "id": "06",
+      "title": "Короче лендинг: без «Производства», новое «Сотрудничество», тип заявки без JS",
+      "requirements": [
+        "G37",
+        "G38",
+        "G39",
+        "G40",
+        "G41",
+        "G56"
+      ],
+      "blockedBy": [],
+      "wave": 6,
+      "zone": [
+        "public/index.html",
+        "<head>",
+        "public/assets/css/main.css",
+        "why",
+        "production",
+        "partners",
+        "public/assets/js/lead-form.js",
+        "public/assets/js/main.js",
+        "initActiveSection",
+        "public/assets/img/production-roll.*",
+        "tests/e2e/",
+        "tests/api/images.test.mjs"
+      ],
+      "review": "нет",
+      "model": "сильная",
+      "status": "pending",
+      "retries": 0,
+      "repairs": 0
+    },
+    {
+      "id": "07",
+      "title": "Первый экран: два рулона 57 × 40 и 80 × 80",
+      "requirements": [
+        "G46",
+        "G47"
+      ],
+      "blockedBy": [
+        "06"
+      ],
+      "wave": 7,
+      "zone": [
+        "tools/render/",
+        "public/assets/img/hero-roll.*",
+        "public/assets/img/og-image.png",
+        "tests/api/images.test.mjs",
+        "README.md"
+      ],
+      "review": "нет",
+      "model": "обычная",
+      "status": "pending",
+      "retries": 0,
+      "repairs": 0
+    },
+    {
+      "id": "08",
+      "title": "Светлая и тёмная тема, заметная лента, которая идёт за прокруткой",
+      "requirements": [
+        "G35",
+        "G36",
+        "G42",
+        "G43",
+        "G53"
+      ],
+      "blockedBy": [
+        "06"
+      ],
+      "wave": 7,
+      "zone": [
+        "public/assets/js/theme.js",
+        "public/assets/css/main.css",
+        "public/assets/js/main.js",
+        "initTape",
+        "public/index.html",
+        "<head>",
+        "public/privacy.html",
+        "public/consent.html",
+        "public/404.html",
+        "public/app/LeadPage.php",
+        "tests/e2e/"
+      ],
+      "review": "нет",
+      "model": "сильная",
+      "status": "pending",
+      "retries": 0,
+      "repairs": 0
+    },
+    {
+      "id": "09",
+      "title": "Сквозная проверка: мобильная версия, меню, ссылки, формы, «Лейпциг», «ДОМЕН» в обеих темах",
+      "requirements": [
+        "G34",
+        "G44",
+        "G45",
+        "G48",
+        "G49",
+        "G50",
+        "G51",
+        "G52",
+        "G54",
+        "G55"
+      ],
+      "blockedBy": [
+        "07",
+        "08"
+      ],
+      "wave": 8,
+      "zone": [
+        "tests/e2e/",
+        "tests/api/",
+        "public/"
+      ],
+      "review": "нет",
+      "model": "обычная",
+      "status": "pending",
+      "retries": 0,
+      "repairs": 0
+    },
+    {
       "id": "F1",
       "title": "Правки по ревью ветки",
       "requirements": [
@@ -403,10 +517,10 @@ window.STATE =
       "review": "да — ремонт ветки",
       "model": "сильная",
       "status": "done",
-      "retries": 0,
-      "repairs": 0,
       "startedAt": "2026-10-17T23:52:20+03:00",
       "finishedAt": "2026-10-17T23:58:58+03:00",
+      "retries": 0,
+      "repairs": 0,
       "tests": {
         "passed": 229,
         "failed": 0
@@ -429,8 +543,8 @@ window.STATE =
     "резервный файл недоставленных заявок — ради R19"
   ],
   "coverage": {
-    "found": 4,
-    "fixed": 4,
+    "found": 2,
+    "fixed": 2,
     "deferred": 0,
     "items": []
   },
@@ -449,11 +563,7 @@ window.STATE =
     "public/app/Text.php:85 / lead-form.js:59 — телефон с табом: клиент отклоняет, сервер принимает",
     "tools/set-site-url.mjs:37 — порт в адресе принимается; спецификация «https, без пути»"
   ],
-  "blind": {
-    "checked": 19,
-    "matched": 19,
-    "mismatches": []
-  },
+  "blind": null,
   "beats": [
     "2026-10-17T16:25:30+03:00",
     "2026-10-17T16:25:42+03:00",
@@ -495,9 +605,20 @@ window.STATE =
     "2026-10-17T23:52:20+03:00",
     "2026-10-17T23:58:58+03:00",
     "2026-10-18T00:05:02+03:00",
-    "2026-10-18T00:05:41+03:00"
+    "2026-10-18T00:05:41+03:00",
+    "2026-10-18T11:34:45+03:00",
+    "2026-10-18T11:34:46+03:00",
+    "2026-10-18T11:35:10+03:00",
+    "2026-10-18T11:35:26+03:00",
+    "2026-10-18T11:36:58+03:00",
+    "2026-10-18T11:48:39+03:00",
+    "2026-10-18T11:48:43+03:00",
+    "2026-10-18T11:57:32+03:00",
+    "2026-10-18T11:59:05+03:00",
+    "2026-10-18T11:59:06+03:00",
+    "2026-10-18T11:59:12+03:00"
   ],
-  "rev": 71,
+  "rev": 86,
   "waiting": null,
   "waits": [
     {
@@ -509,6 +630,11 @@ window.STATE =
       "kind": "briefing",
       "from": "2026-10-17T22:20:23+03:00",
       "to": "2026-10-17T22:22:13+03:00"
+    },
+    {
+      "kind": "briefing",
+      "from": "2026-10-18T11:36:58+03:00",
+      "to": "2026-10-18T11:48:39+03:00"
     }
   ],
   "log": [
@@ -999,6 +1125,79 @@ window.STATE =
       "t": "2026-10-18T00:05:41+03:00",
       "k": "finish",
       "result": "Сайт «ВсеЧеки» без упоминаний Лейпцига: новая визуализация «Производства», адрес сайта одной командой, форма и мобильная версия доведены; 229 тестов зелёные, не опубликован"
+    },
+    {
+      "t": "2026-10-18T11:34:45+03:00",
+      "k": "reopen"
+    },
+    {
+      "t": "2026-10-18T11:35:10+03:00",
+      "k": "stage",
+      "id": "manifest",
+      "act": "start"
+    },
+    {
+      "t": "2026-10-18T11:36:58+03:00",
+      "k": "stage",
+      "id": "briefing",
+      "act": "start"
+    },
+    {
+      "t": "2026-10-18T11:36:58+03:00",
+      "k": "ask",
+      "kind": "briefing",
+      "note": "три вопроса — движение ленты, какое изображение заменить, что взять из прошлых хвостов"
+    },
+    {
+      "t": "2026-10-18T11:48:39+03:00",
+      "k": "answered",
+      "kind": "briefing"
+    },
+    {
+      "t": "2026-10-18T11:48:43+03:00",
+      "k": "gate",
+      "g": "G1",
+      "ok": false,
+      "open": 23,
+      "total": 94
+    },
+    {
+      "t": "2026-10-18T11:48:43+03:00",
+      "k": "stage",
+      "id": "spec",
+      "act": "start"
+    },
+    {
+      "t": "2026-10-18T11:57:32+03:00",
+      "k": "gate",
+      "g": "G2",
+      "ok": true,
+      "found": 2,
+      "fixed": 2,
+      "deferred": 0
+    },
+    {
+      "t": "2026-10-18T11:57:32+03:00",
+      "k": "stage",
+      "id": "plan",
+      "act": "start"
+    },
+    {
+      "t": "2026-10-18T11:59:05+03:00",
+      "k": "tickets",
+      "n": 11
+    },
+    {
+      "t": "2026-10-18T11:59:06+03:00",
+      "k": "gate",
+      "g": "G3",
+      "ok": true,
+      "problems": 0
+    },
+    {
+      "t": "2026-10-18T11:59:12+03:00",
+      "k": "tier",
+      "v": "T2"
     }
   ],
   "reqList": [
@@ -1357,35 +1556,144 @@ window.STATE =
       "id": "G33",
       "text": "«ок» на «проверка «нет секретов» с дырами — взять»",
       "status": "done"
+    },
+    {
+      "id": "G34",
+      "text": "«Доработай существующий сайт «ВсеЧеки», не создавая новый проект»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G35",
+      "text": "«Сделай левую декоративную ленту заметнее»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G36",
+      "text": "«и привяжи её движение к направлению прокрутки»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G37",
+      "text": "«Сократи лендинг: убери отдельную большую секцию производства»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G38",
+      "text": "«а её важную информацию компактно перенеси в другой блок»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G39",
+      "text": "«Переработай блок сотрудничества — меньше огромного текста»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G40",
+      "text": "«больше пользы»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G41",
+      "text": "«и ясный призыв к заявке»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G42",
+      "text": "«Добавь переключатель светлой и тёмной темы»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G43",
+      "text": "«с сохранением выбора»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G44",
+      "text": "«Удали отовсюду «Лейпциг»»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G45",
+      "text": "«но не трогай «Липецк» в контактах»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G46",
+      "text": "«Замени 3D-изображение рулонов на более подходящее»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G47",
+      "text": "«и убери подпись под ним»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G48",
+      "text": "«Проверь мобильную версию»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G49",
+      "text": "«меню»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G50",
+      "text": "«ссылки»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G51",
+      "text": "«формы»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G52",
+      "text": "«и заглушки «ДОМЕН»»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G53",
+      "text": "«Сохрани существующий стиль»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G54",
+      "text": "«и работающие функции»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G55",
+      "text": "«Сайт не публикуй»",
+      "status": "in-ticket"
+    },
+    {
+      "id": "G56",
+      "text": "«ДАвай» на «баг: без JavaScript вкладку „Сотрудничество\" не выбрать — взять»",
+      "status": "in-ticket"
     }
   ],
   "gates": {
     "G1": {
       "ok": false,
-      "at": "2026-10-17T22:22:13+03:00",
-      "open": 19,
-      "total": 71
+      "at": "2026-10-18T11:48:43+03:00",
+      "open": 23,
+      "total": 94
     },
     "G2": {
       "ok": true,
-      "at": "2026-10-17T22:42:20+03:00",
-      "found": 4,
-      "fixed": 4,
+      "at": "2026-10-18T11:57:32+03:00",
+      "found": 2,
+      "fixed": 2,
       "deferred": 0
     },
     "G3": {
       "ok": true,
-      "at": "2026-10-17T23:52:20+03:00",
+      "at": "2026-10-18T11:59:06+03:00",
       "problems": 0
-    },
-    "G4": {
-      "ok": true,
-      "at": "2026-10-18T00:05:02+03:00",
-      "checked": 19,
-      "matched": 19
     }
   },
-  "result": "Сайт «ВсеЧеки» без упоминаний Лейпцига: новая визуализация «Производства», адрес сайта одной командой, форма и мобильная версия доведены; 229 тестов зелёные, не опубликован",
+  "result": null,
   "report": [
     "Отправка почты через SMTP (ssl/STARTTLS) и работа на PHP 7.4 не проверены вживую — первую заявку на хостинге стоит отправить вручную и убедиться, что письмо дошло (smtp.yandex.ru:465)",
     "Полный адрес оператора ПДн в политике и согласии — только «г. Липецк»; для согласия по 152-ФЗ нужен полный адрес — впиши его сам",
