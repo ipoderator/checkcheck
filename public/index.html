@@ -6,7 +6,8 @@
   <title>ВсеЧеки&nbsp;— кассовая лента от&nbsp;производителя: 57&nbsp;×&nbsp;40, 80&nbsp;×&nbsp;80 и&nbsp;другие размеры под&nbsp;заказ</title>
   <meta name="description" content="ВсеЧеки — производитель кассовой термоленты. Собственное производство, качественные немецкие материалы, оптовые поставки напрямую и отправка в любой регион России. Форматы 57 × 40 и 80 × 80, другие размеры — под заказ.">
   <!-- site-url: адрес сайта проставляет npm run set-site-url (см. README) -->
-  <meta name="theme-color" content="#F7F6F2">
+  <meta name="theme-color" content="#F7F6F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141517" media="(prefers-color-scheme: dark)">
   <meta name="format-detection" content="telephone=no">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ru_RU">
@@ -24,6 +25,7 @@
   <link rel="preload" href="assets/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/main.css">
   <script>(function(r){r.className+=' js';setTimeout(function(){if(!r.hasAttribute('data-ui-ready'))r.className=r.className.replace(/\bjs\b/,'');},4000);})(document.documentElement);</script>
+  <script src="assets/js/theme.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -58,9 +60,9 @@
     <div class="frame site-header__inner">
       <a class="logo" href="#top" aria-label="ВсеЧеки — на начало страницы">
         <svg class="logo__mark" viewBox="0 0 28 34" width="28" height="34" aria-hidden="true" focusable="false">
-          <path d="M3 1h22a1 1 0 0 1 1 1v28l-3 3-3-3-3 3-3-3-3 3-3-3-3 3-3-3V2a1 1 0 0 1 1-1z" fill="#FFFFFF" stroke="#141517" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M7 8h14M7 13h9M7 18h14" stroke="#141517" stroke-width="2" stroke-linecap="square"/>
-          <path d="M7 23h6" stroke="#E5352B" stroke-width="2" stroke-linecap="square"/>
+          <path class="logo__paper" d="M3 1h22a1 1 0 0 1 1 1v28l-3 3-3-3-3 3-3-3-3 3-3-3-3 3-3-3V2a1 1 0 0 1 1-1z" stroke-width="2" stroke-linejoin="round"/>
+          <path class="logo__print" d="M7 8h14M7 13h9M7 18h14" stroke-width="2" stroke-linecap="square"/>
+          <path class="logo__cut" d="M7 23h6" stroke-width="2" stroke-linecap="square"/>
         </svg>
         <span class="logo__word">ВсеЧеки</span>
       </a>
@@ -83,6 +85,10 @@
           <span class="header-phone__number">8&nbsp;920&nbsp;243-19-57</span>
         </a>
         <a class="btn btn--accent btn--small header-cta" href="#price">Рассчитать цену</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Тёмная тема">
+          <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" data-menu-toggle>
           <span class="menu-toggle__bars" aria-hidden="true"></span>
           <span class="visually-hidden" data-menu-toggle-label>Открыть меню</span>
@@ -596,9 +602,9 @@
       <div class="site-footer__brand">
         <a class="logo logo--light" href="#top" aria-label="ВсеЧеки — на начало страницы">
           <svg class="logo__mark" viewBox="0 0 28 34" width="28" height="34" aria-hidden="true" focusable="false">
-            <path d="M3 1h22a1 1 0 0 1 1 1v28l-3 3-3-3-3 3-3-3-3 3-3-3-3 3-3-3V2a1 1 0 0 1 1-1z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
-            <path d="M7 8h14M7 13h9M7 18h14" stroke="#141517" stroke-width="2" stroke-linecap="square"/>
-            <path d="M7 23h6" stroke="#E5352B" stroke-width="2" stroke-linecap="square"/>
+            <path class="logo__paper" d="M3 1h22a1 1 0 0 1 1 1v28l-3 3-3-3-3 3-3-3-3 3-3-3-3 3-3-3V2a1 1 0 0 1 1-1z" stroke-width="2" stroke-linejoin="round"/>
+            <path class="logo__print" d="M7 8h14M7 13h9M7 18h14" stroke-width="2" stroke-linecap="square"/>
+            <path class="logo__cut" d="M7 23h6" stroke-width="2" stroke-linecap="square"/>
           </svg>
           <span class="logo__word">ВсеЧеки</span>
         </a>

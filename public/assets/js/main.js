@@ -118,7 +118,7 @@ function initReveal() {
   });
 }
 
-/* ---------- Лента: «печатается» по мере прокрутки, не сматывается обратно ---------- */
+/* ---------- Лента: выезжает при прокрутке вниз, сматывается при прокрутке вверх ---------- */
 function initTape() {
   const tape = document.querySelector('[data-tape]');
   const marks = [...document.querySelectorAll('.tape-mark')];
@@ -147,9 +147,9 @@ function initTape() {
   }
 
   function aim() {
-    // Кончик ленты держится чуть выше нижнего края экрана.
+    // Кончик ленты держится чуть выше нижнего края экрана — в обе стороны прокрутки.
     const wanted = window.scrollY + window.innerHeight * 0.84 - top;
-    target = Math.max(target, Math.min(height, wanted));
+    target = Math.max(0, Math.min(height, wanted));
   }
 
   function render() {
@@ -157,7 +157,8 @@ function initTape() {
     clip.style.transform = `translate3d(0, ${-hidden}px, 0)`;
     paper.style.transform = `translate3d(0, ${hidden}px, 0)`;
     tip.style.transform = `translate3d(0, ${printed}px, 0)`;
-    markTops.forEach((y, i) => { if (y + 24 < printed) marks[i].classList.add('is-printed'); });
+    // Метка «напечатана», пока кончик ниже неё; при смотке выше — «стирается».
+    markTops.forEach((y, i) => marks[i].classList.toggle('is-printed', y + 24 < printed));
   }
 
   function tick() {
@@ -169,6 +170,7 @@ function initTape() {
   }
 
   function schedule() {
+    if (reducedMotion.matches) return; // движение выключили на лету — лента остаётся целиком
     aim();
     if (!frame) frame = requestAnimationFrame(tick);
   }
