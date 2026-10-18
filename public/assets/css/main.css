@@ -1617,6 +1617,37 @@ label.tabs__tab { display: flex; align-items: center; justify-content: center; t
 @media print {
   .site-header, .tape, .tape-mark, .ticker, .mobile-menu { display: none !important; }
   body { background: #fff; }
+  /* Бумага белая — печать всегда в светлой теме: те же токены, что тёмная тема переопределяет выше,
+     со значениями из :root. Селекторы — как у тёмной темы, чтобы перебить её в любом случае.
+     Сверяет tests/e2e/theme.spec.mjs («печать в тёмной теме»). */
+  :root:not([data-theme="light"]), :root[data-theme="dark"] {
+    color-scheme: light;
+    --paper: #F7F6F2;
+    --white: #FFFFFF;
+    --ink: #141517;
+    --ink-hover: #000000;
+    --muted: #5E6066;
+    --line: #DCDAD3;
+    --accent-text: #D12E24;
+    --dark: #141517;
+    --dark-edge: transparent;
+    --footer-bg: #0D0E10;
+    --header-bg: rgba(247, 246, 242, .92);
+    --scrim: rgba(20, 21, 23, .4);
+    --media-hi: #FFFFFF;
+    --media-lo: #EFEDE7;
+    --placeholder: #8A8C91;
+    --field-focus: #F4F3EE;
+    --chip-hover: #F0EFEA;
+    --error: #B3241B;
+    --error-bg: #FFF3F2;
+    --error-bg-soft: #FFF6F5;
+    --shadow-paper: 0 1px 0 rgba(20, 21, 23, .04), 0 18px 40px -18px rgba(20, 21, 23, .28);
+    --receipt-shadow: drop-shadow(0 30px 40px rgba(20, 21, 23, .16)) drop-shadow(0 2px 3px rgba(20, 21, 23, .08));
+    --sheet: #FFFFFF;
+    --icon-moon: block;
+    --icon-sun: none;
+  }
 }
 
 /* ---------- Юридические страницы ---------- */

@@ -208,3 +208,57 @@ for (const scheme of ['light', 'dark']) {
     });
   }
 }
+
+// Печать: бумага белая, поэтому в любой теме действуют токены светлой — текст тёмный.
+// Тёмные разделы главной (.section--dark, подвал) и на экране светлой темы светлым по тёмному — их не сверяем.
+const PRINT_PAGES = ['/privacy.html', '/consent.html', '/'];
+const printColors = (page) => page.evaluate(() => {
+  const light = (el) => {
+    const [r, g, b] = getComputedStyle(el).color.match(/\d+/g).map(Number);
+    return Math.round((r + g + b) / 3);
+  };
+  const headings = [...document.querySelectorAll('h1, h2')]
+    .filter((el) => !el.closest('.section--dark, .site-footer'));
+  return {
+    body: light(document.body),
+    headings: headings.map((el) => ({ text: el.textContent.trim().slice(0, 40), lightness: light(el) })),
+  };
+});
+const tokens = (page, names) => page.evaluate((list) => {
+  const style = getComputedStyle(document.documentElement);
+  return Object.fromEntries(list.map((name) => [name, style.getPropertyValue(name).trim()]));
+}, names);
+
+for (const mode of ['data-theme="dark"', 'системная тёмная']) {
+  test(`печать в тёмной теме (${mode}) — тёмный текст на privacy, consent и главной`, async ({ page }) => {
+    // Светлые значения токенов — эталон для печати.
+    await page.emulateMedia({ colorScheme: 'light', media: 'screen' });
+    await page.goto('/privacy.html');
+    const names = await page.evaluate(() => [...document.styleSheets]
+      .flatMap((sheet) => [...sheet.cssRules])
+      .filter((rule) => rule.media && /prefers-color-scheme: dark/.test(rule.media.mediaText))
+      .flatMap((rule) => [...rule.cssRules].flatMap((inner) => [...inner.style]))
+      .filter((name) => name.startsWith('--')));
+    expect(names.length).toBeGreaterThan(10);
+    const lightTokens = await tokens(page, names);
+
+    if (mode === 'data-theme="dark"') {
+      await page.emulateMedia({ colorScheme: 'light' });
+      await page.addInitScript((k) => localStorage.setItem(k, 'dark'), KEY);
+    } else {
+      await page.emulateMedia({ colorScheme: 'dark' });
+    }
+    for (const path of PRINT_PAGES) {
+      await page.emulateMedia({ media: 'screen' });
+      await page.goto(path);
+      expect(await isDark(page), `${path}: на экране тёмная`).toBe(true);
+      await page.emulateMedia({ media: 'print' });
+      expect(await tokens(page, names), `${path}: токены печати`).toEqual(lightTokens);
+      expect(await isDark(page), `${path}: фон печати`).toBe(false);
+      const colors = await printColors(page);
+      expect(colors.body, `${path}: текст body`).toBeLessThan(80);
+      expect(colors.headings.length, path).toBeGreaterThan(0);
+      for (const h of colors.headings) expect(h.lightness, `${path}: «${h.text}»`).toBeLessThan(80);
+    }
+  });
+}
