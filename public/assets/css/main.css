@@ -1077,6 +1077,8 @@ html:not(.js) .theme-toggle { display: none; }
 .delivery__grid .section-head { margin-bottom: 0; }
 .delivery__body { padding-top: 12px; }
 .delivery__body > p { color: var(--muted); max-width: 40ch; }
+.delivery__body > p + p { margin-top: 10px; }
+.delivery__free { color: var(--ink); font-weight: 600; }
 .delivery__lead { font-size: clamp(19px, 1rem + 0.5vw, 24px); color: var(--ink) !important; font-weight: 600; margin-bottom: 12px; line-height: 1.4; }
 .ship-label {
   margin-top: 36px;

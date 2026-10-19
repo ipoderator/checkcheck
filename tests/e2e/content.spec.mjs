@@ -174,3 +174,16 @@ test('форматы: без «основных», другие размеры �
   await expect(page.locator('.format-card__caption')).toHaveText(['ширина × намотка, мм', 'ширина × намотка, мм']);
   await expect(page.locator('#lead-format-hint')).toHaveText('ширина × намотка, мм');
 });
+
+// Сообщено владельцем 2026-10-19: «доставка по городу Липецк бесплатно, так же высылаем тестовые образцы в любой город».
+// В «Сотрудничестве» — только образцы: раздел и так на пределе высоты экрана.
+test('«Доставка» и вопросы: бесплатно по Липецку и тестовые образцы в любой город; «Сотрудничество» — образцы', async ({ page }) => {
+  const text = async (sel) => (await page.locator(sel).textContent()).replace(/ /g, ' ').replace(/\s+/g, ' ');
+  for (const sel of ['#delivery', '#faq']) {
+    const t = await text(sel);
+    expect(t, sel).toMatch(/Липецк[^.]*бесплатн/i);
+    expect(t, sel).toMatch(/образцы[^.]*в любой город/i);
+  }
+  expect(await text('#partners')).toMatch(/образцы в любой город/i);
+  await expect(page.locator('#faq summary', { hasText: /образцы/ })).toHaveCount(1);
+});
