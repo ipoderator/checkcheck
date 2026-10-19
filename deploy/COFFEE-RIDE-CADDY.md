@@ -41,7 +41,19 @@ www.xn--b1agamj3b4b.site {
 }
 ```
 
-Перед блоком в серверной версии стоит одна пустая строка. Точный текст на сервере:
+**Дополнение 2026-10-19.** Владелец подключил латинский домен vsecheki.site: он только
+перенаправляет 301 на всечеки.site. `deploy/publish.sh` дописал на сервере второй блок
+(после пустой строки, сразу за первым), его тоже внести в репозиторий:
+
+```caddyfile
+# Латинский домен vsecheki.site (с www и без) — только 301 на https://всечеки.site, путь и параметры сохраняются.
+# http:// записаны явно: иначе Caddy на 80-м порту сам ответит 308 на https://vsecheki.site, а 301 будет вторым шагом.
+http://vsecheki.site, http://www.vsecheki.site, vsecheki.site, www.vsecheki.site {
+	redir https://xn--b1agamj3b4b.site{uri} permanent
+}
+```
+
+Перед каждым блоком в серверной версии стоит одна пустая строка. Точный текст на сервере:
 `sudo git -C /opt/deployments/coffee-ride -c safe.directory='*' diff deploy/Caddyfile`.
 
 Оформи это по правилам своего репозитория (номер CR, ADR, PR, CI) — по смыслу это
@@ -71,6 +83,7 @@ www.xn--b1agamj3b4b.site {
 5. Проверить:
    - `curl -sI https://xn--b1agamj3b4b.site/` → `200`;
    - `curl -sI https://www.xn--b1agamj3b4b.site/` → `301` на голый домен;
+   - `curl -sI 'http://vsecheki.site/a?b=1'` и `https://www.vsecheki.site/` → `301` на `https://xn--b1agamj3b4b.site/…` с тем же путём;
    - сам coffee-ride отвечает как прежде;
    - `git status` в `/opt/deployments/coffee-ride` чистый.
 

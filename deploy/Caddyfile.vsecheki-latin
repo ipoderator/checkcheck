@@ -1,0 +1,5 @@
+# Латинский домен vsecheki.site (с www и без) — только 301 на https://всечеки.site, путь и параметры сохраняются.
+# http:// записаны явно: иначе Caddy на 80-м порту сам ответит 308 на https://vsecheki.site, а 301 будет вторым шагом.
+http://vsecheki.site, http://www.vsecheki.site, vsecheki.site, www.vsecheki.site {
+	redir https://xn--b1agamj3b4b.site{uri} permanent
+}
