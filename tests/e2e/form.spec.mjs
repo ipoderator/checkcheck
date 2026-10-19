@@ -39,7 +39,7 @@ test('пустой конфиг: «Форма пока не подключена
   const status = page.locator('[data-lead-status]');
   await expect(status).toContainText(/Форма пока не\s+подключена\s+— заявка не\s+отправлена/, { timeout: 15000 });
   await expect(status).toContainText(/8\s920\s243-19-57/);
-  await expect(status).toContainText('ipoderator@yandex.ru');
+  await expect(status).toContainText('info@всечеки.site');
   await expect(page.locator('#lead-form')).toHaveAttribute('data-state', 'error');
   await expect(page.locator('#lead-name')).toHaveValue('Мария');
   await expect(page.locator('#lead-phone')).toHaveValue('+7 (920) 111-22-33');

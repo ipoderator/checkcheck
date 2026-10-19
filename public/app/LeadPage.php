@@ -12,7 +12,7 @@ if (!defined('VSECHEKI_APP')) {
 final class LeadPage
 {
     const PHONE_HTML = '<a class="link" href="tel:+79202431957">8&nbsp;920&nbsp;243-19-57</a>';
-    const EMAIL_HTML = '<a class="link" href="mailto:ipoderator@yandex.ru">ipoderator@yandex.ru</a>';
+    const EMAIL_HTML = '<a class="link" href="mailto:info@xn--b1agamj3b4b.site">info@всечеки.site</a>';
 
     const LABELS = [
         'type' => 'Тип заявки',

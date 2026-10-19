@@ -7,7 +7,7 @@ const MIN_FILL_MS = 3000; // сервер считает более быстру
 const REQUEST_TIMEOUT_MS = 20000;
 const NB = ' ';
 const PHONE_HTML = `<a href="tel:+79202431957">8${NB}920${NB}243-19-57</a>`;
-const EMAIL_HTML = '<a href="mailto:ipoderator@yandex.ru">ipoderator@yandex.ru</a>';
+const EMAIL_HTML = '<a href="mailto:info@xn--b1agamj3b4b.site">info@всечеки.site</a>';
 
 const FIELD_ORDER = ['type', 'name', 'phone', 'email', 'company', 'region', 'format', 'format_custom', 'quantity', 'message', 'consent'];
 // Согласие в черновик не пишется: на общем компьютере его иначе «давал» бы предыдущий посетитель.

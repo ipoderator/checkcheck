@@ -44,7 +44,7 @@ test('мета-теги, Open Graph и JSON-LD Organization только из р
   expect(ld['@type']).toBe('Organization');
   expect(ld.name).toBe('ВсеЧеки');
   expect(ld.telephone).toBe('+79202431957');
-  expect(ld.email).toBe('ipoderator@yandex.ru');
+  expect(ld.email).toBe('info@всечеки.site');
   expect(ld.taxID).toBe('270399373377');
   expect(ld.legalName).toBe('ИП Чуркин Глеб Олегович');
   expect(ld.address.addressLocality).toBe('Липецк');
@@ -74,7 +74,11 @@ for (const path of ['/privacy.html', '/consent.html']) {
     const text = await page.evaluate(() => document.body.innerText);
     expect(text).toMatch(/ИП\sЧуркин\sГлеб\sОлегович/);
     expect(text).toContain('270399373377');
-    expect(text).toContain('ipoderator@yandex.ru');
+    expect(text).toContain('info@всечеки.site');
+    // В mailto — punycode: кириллический домен понимают не все почтовые программы.
+    const mailtos = await page.locator('a[href^="mailto:"]').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+    expect(mailtos.length).toBeGreaterThan(0);
+    for (const href of mailtos) expect(href).toBe('mailto:info@xn--b1agamj3b4b.site');
     expect(text).not.toMatch(/ул\.|улица|проспект|дом\s\d/i);
     await expect(page.locator('a[href="./"], a[href="/"], a[href="index.html"]').first()).toBeVisible();
   });
