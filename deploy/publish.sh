@@ -73,9 +73,7 @@ for i in $(seq 1 12); do
 done
 echo "   https://$DOMAIN/ → $code"
 echo "   https://www.$DOMAIN/ → $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "https://www.$DOMAIN/" || true)"
-# vsecheki.site — через --resolve на этот сервер: проверка не зависит от того, куда сейчас смотрит DNS.
-IP=${HOST#*@}
-echo "   http://vsecheki.site/a?b=1 → $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' --resolve "vsecheki.site:80:$IP" 'http://vsecheki.site/a?b=1' || true)"
-echo "   https://www.vsecheki.site/ → $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' --resolve "www.vsecheki.site:443:$IP" https://www.vsecheki.site/ || echo 'нет сертификата — DNS ещё не на этом сервере?')"
+# vsecheki.site — с самого сервера через --resolve: не зависит ни от DNS, ни от прокси между нами и сервером.
+echo "   vsecheki.site: $(ssh "$HOST" "curl -s -o /dev/null -w 'http %{http_code} %{redirect_url}' --resolve vsecheki.site:80:127.0.0.1 'http://vsecheki.site/a?b=1'; curl -s -o /dev/null -w ' · https www %{http_code} %{redirect_url}' --resolve www.vsecheki.site:443:127.0.0.1 https://www.vsecheki.site/ || echo ' · https: нет сертификата — DNS ещё не на этом сервере?'" || true)"
 echo "   /app/ → $(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/app/" || true) (ожидается 403)"
 echo "   coffee-ride → $(ssh "$HOST" "sudo docker exec $CADDY_CONTAINER sh -c 'wget -qS -O /dev/null https://\$DOMAIN/ 2>&1 | head -1'" || echo 'не проверен')"
